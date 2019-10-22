@@ -92,6 +92,7 @@ MonoBehaviour:
   depthPeelShader: {fileID: 4800000, guid: dfc23fe965889dc45a59665a95dab239, type: 3}
   blendShader: {fileID: 4800000, guid: dd705834d63a4624eb3d01ab7fb92ae9, type: 3}
   initShader: {fileID: 0}
+  copyShader: {fileID: 4800000, guid: a7d70428104fbe84b8d869af001463b8, type: 3}
   display: {fileID: 0}
 --- !u!1 &330699099216524511
 GameObject:

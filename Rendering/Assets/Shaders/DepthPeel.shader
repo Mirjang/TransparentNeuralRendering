@@ -1,10 +1,4 @@
-﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
-
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
-Shader "Custom/DepthPeel"
+﻿Shader "Custom/DepthPeel"
 {
 	Properties
 	{
@@ -18,7 +12,7 @@ Shader "Custom/DepthPeel"
 		{
 			Tags { "LightMode" = "ForwardBase" }
 			ZWrite On
-			Cull Off
+//			Cull Off
 
 			CGPROGRAM
 			#pragma vertex vert
@@ -80,7 +74,7 @@ Shader "Custom/DepthPeel"
 				float depth = i.depth;
 				float prevDepth = DecodeFloatRGBA(tex2Dproj(_PrevDepthTex, UNITY_PROJ_COORD(i.screenPos)));
 
-				clip(depth - (prevDepth + 0.0000001));
+				clip(depth - (prevDepth + 0.00001));
 
 				//Lighting
 				fixed3 tangentLightDir = normalize(i.lightDir);

@@ -10,7 +10,8 @@ public class CustomRender : MonoBehaviour
     public Shader uvShader;
     public Shader depthPeelShader;
     public Shader blendShader;
-    public Shader initShader; 
+    public Shader initShader;
+    public Shader copyShader; 
 
 
     public Renderer display = null;
@@ -18,6 +19,7 @@ public class CustomRender : MonoBehaviour
     private RenderTexture opaqueTexture = null;
     private RenderTexture[] depthPeelBuffers = new RenderTexture[2]; // use prev depth buffer as mask for next depth peeling pass
     private Material blendMat = null;
+    private Material copyMat = null; 
 
     private int cameraID = -1;
     private int frameID = 0; 
@@ -29,6 +31,7 @@ public class CustomRender : MonoBehaviour
         camera = GetComponent<Camera>();
         cameraID = RenderOptions.getInstance().getIncrementalCameraId(); 
         blendMat = new Material(blendShader);
+        copyMat = new Material(copyShader); 
     }
 
     // Update is called once per frame
@@ -72,8 +75,6 @@ public class CustomRender : MonoBehaviour
             colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             camera.backgroundColor = new Color(0, 0, 0, 0);
-            camera.clearFlags = CameraClearFlags.Color;
-
             RenderBuffer[] renderTargets = new RenderBuffer[3]; // rgb, uv and depth
 
 
@@ -83,7 +84,7 @@ public class CustomRender : MonoBehaviour
             //renderTargets[2] = depthPeelBuffers[0].colorBuffer;
             //camera.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
             //camera.RenderWithShader(initShader, null);
-
+            camera.backgroundColor = new Color(1, 1, 1, 1); 
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
             {
@@ -91,12 +92,13 @@ public class CustomRender : MonoBehaviour
                 uvBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
                 renderTargets[0] = colorBuffers[i].colorBuffer;
                 renderTargets[1] = uvBuffers[i].colorBuffer;
-                renderTargets[2] = depthPeelBuffers[i % 2].colorBuffer;
+                renderTargets[2] = depthPeelBuffers[i%2].colorBuffer;
                 camera.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
-                Shader.SetGlobalTexture("_PrevDepthTex", depthPeelBuffers[1 - i % 2]);
+                Shader.SetGlobalTexture("_PrevDepthTex", depthPeelBuffers[1-i%2]);
                 camera.RenderWithShader(depthPeelShader, null);
-
-
+                //Graphics.CopyTexture(depthPeelBuffers[0], depthPeelBuffers[1]); 
+                copyMat.SetTexture("_LayerTex", depthPeelBuffers[1]);
+                //Graphics.Blit(depthPeelBuffers[0], depthPeelBuffers[1], copyMat); 
                 //   writeRenderTextureToFile(depthPeelBuffers[i % 2], "d_" + (i));
             }
 
