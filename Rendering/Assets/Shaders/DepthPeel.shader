@@ -1,4 +1,8 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
 Shader "Custom/DepthPeel"
 {
@@ -14,6 +18,7 @@ Shader "Custom/DepthPeel"
 		{
 			Tags { "LightMode" = "ForwardBase" }
 			ZWrite On
+			Cull Off
 
 			CGPROGRAM
 			#pragma vertex vert
@@ -24,14 +29,6 @@ Shader "Custom/DepthPeel"
 			sampler2D _MainTex;
 			float4 _MainTex_ST;
 			sampler2D _PrevDepthTex;
-
-			half4 LightingSimpleLambert(SurfaceOutput s, half3 lightDir, half atten) {
-				half NdotL = dot(s.Normal, lightDir);
-				half4 c;
-				c.rgb = s.Albedo * _LightColor0.rgb * (NdotL * atten);
-				c.a = s.Alpha;
-				return c;
-			}
 
 			struct appdata
 			{
@@ -83,8 +80,8 @@ Shader "Custom/DepthPeel"
 				float depth = i.depth;
 				float prevDepth = DecodeFloatRGBA(tex2Dproj(_PrevDepthTex, UNITY_PROJ_COORD(i.screenPos)));
 
-				clip(depth - (prevDepth + 0.00001));
-				
+				clip(depth - (prevDepth + 0.0000001));
+
 				//Lighting
 				fixed3 tangentLightDir = normalize(i.lightDir);
 				fixed3 tangentViewDir = normalize(i.viewDir);
@@ -97,10 +94,21 @@ Shader "Custom/DepthPeel"
 
 				f2out o;
 
-				o.col = float4(ambient + diffuse, 1); //fixed alpha for now
+				o.col = float4(ambient + diffuse, .5); //fixed alpha for now
 				//o.col = float4(tex2D(_MainTex, i.uv).rgb, .25); 
 				//o.col = float4(i.normal, 1);
 				o.uv = float4(i.uv.x, i.uv.y, 0, 1); 
+	
+				//float fwd = 1; 
+				//float back = 0;
+				//if (mul((float3x3)unity_ObjectToWorld, i.normal).z < 0)
+				//{
+				//	fwd = 0; 
+				//	back = 1; 
+				//}
+
+				//o.uv = float4(fwd,back,0, 1);
+
 				o.depth = EncodeFloatRGBA(i.depth);
 
 				return o;

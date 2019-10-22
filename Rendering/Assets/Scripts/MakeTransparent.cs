@@ -15,6 +15,7 @@ public class MakeTransparent : MonoBehaviour
             renderer.enabled = false;
 
             Material mat = new Material(RenderOptions.getInstance().default_t);
+            mat.color = renderer.material.color; 
             changeAlpha(mat, alpha);
             mat.SetTexture("_MainTex", renderer.material.GetTexture("_MainTex"));
             renderer.material = mat; 

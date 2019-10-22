@@ -8,7 +8,7 @@ public class RenderOptions : MonoBehaviour
 
 
     public bool useCustomGlobalAlpha = true;
-    public float globalAlha = .5f;
+    public float globalAlpha = .5f;
 
     public int numFrames = 1;
     public int startFrame = 2;
@@ -19,18 +19,18 @@ public class RenderOptions : MonoBehaviour
     public string outputDir = "";
 
     public bool renderRGBOpaque = true;
-    public bool renderUVOpaque = true;
+    public bool renderUVOpaque = false;
     public bool renderTransparent = true;
 
     public Material default_t;
 
-    private int camerIDCounter = 0; 
+    public int camerIDCounter = 0; 
     // Start is called before the first frame update
     void Awake()
     {
 
         if (outputDir == "")
-            outputDir = Application.dataPath + "/../";
+            outputDir = Application.dataPath + "/../../Data/";
         parseOptionsFromFile();
 
         instance = this;
