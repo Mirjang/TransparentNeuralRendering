@@ -97,7 +97,7 @@ public class CustomRender : MonoBehaviour
                 Shader.SetGlobalTexture("_PrevDepthTex", depthPeelBuffers[1-i%2]);
                 camera.RenderWithShader(depthPeelShader, null);
                 //Graphics.CopyTexture(depthPeelBuffers[0], depthPeelBuffers[1]); 
-                copyMat.SetTexture("_LayerTex", depthPeelBuffers[1]);
+                //copyMat.SetTexture("_LayerTex", depthPeelBuffers[1]);
                 //Graphics.Blit(depthPeelBuffers[0], depthPeelBuffers[1], copyMat); 
                 //   writeRenderTextureToFile(depthPeelBuffers[i % 2], "d_" + (i));
             }
