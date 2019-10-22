@@ -18,7 +18,7 @@ public class RenderOptions : MonoBehaviour
 
     public string outputDir = "";
 
-    public bool renderRGBOpaque = true;
+    public bool renderRGBUnity = true;
     public bool renderUVOpaque = false;
     public bool renderTransparent = true;
 

@@ -374,7 +374,7 @@ MonoBehaviour:
   startFrame: 2
   numDepthPeelLayers: 8
   outputDir: 
-  renderRGBOpaque: 0
+  renderRGBOpaque: 1
   renderUVOpaque: 0
   renderTransparent: 1
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}

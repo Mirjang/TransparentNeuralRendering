@@ -1,7 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.IO; 
+using System.IO;
+using UnityEngine.Rendering; 
 
 [RequireComponent(typeof(Camera))]
 public class CustomRender : MonoBehaviour
@@ -41,7 +42,7 @@ public class CustomRender : MonoBehaviour
 
     public void RenderImage()
     {
-        if (RenderOptions.getInstance().renderRGBOpaque)
+        if (RenderOptions.getInstance().renderRGBUnity)
         {
             RenderTexture rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             camera.targetTexture = rt;
@@ -76,13 +77,12 @@ public class CustomRender : MonoBehaviour
             RenderBuffer[] renderTargets = new RenderBuffer[3]; // rgb, uv and depth
 
 
-
             //innital pass
-            renderTargets[0] = colorBuffers[0].colorBuffer;
-            renderTargets[1] = uvBuffers[0].colorBuffer;
-            renderTargets[2] = depthPeelBuffers[0].colorBuffer;
-            camera.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
-            camera.RenderWithShader(initShader, null);
+            //renderTargets[0] = colorBuffers[0].colorBuffer;
+            //renderTargets[1] = uvBuffers[0].colorBuffer;
+            //renderTargets[2] = depthPeelBuffers[0].colorBuffer;
+            //camera.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
+            //camera.RenderWithShader(initShader, null);
 
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
@@ -96,7 +96,8 @@ public class CustomRender : MonoBehaviour
                 Shader.SetGlobalTexture("_PrevDepthTex", depthPeelBuffers[1 - i % 2]);
                 camera.RenderWithShader(depthPeelShader, null);
 
-             //   writeRenderTextureToFile(depthPeelBuffers[i % 2], "d_" + (i));
+
+                //   writeRenderTextureToFile(depthPeelBuffers[i % 2], "d_" + (i));
             }
 
             RenderTexture finalImage = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
