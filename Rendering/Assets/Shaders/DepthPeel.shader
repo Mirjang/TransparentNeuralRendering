@@ -12,7 +12,7 @@
 		{
 			Tags { "LightMode" = "ForwardBase" }
 			ZWrite On
-//			Cull Off
+			Cull Off
 
 			CGPROGRAM
 			#pragma vertex vert
