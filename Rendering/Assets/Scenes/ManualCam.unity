@@ -262,7 +262,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 130285132}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.466, y: 0.16600001, z: 0.954}
+  m_LocalPosition: {x: 0.45, y: 0.16600001, z: 1.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1151972937}
@@ -597,11 +597,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa2bbf7ac3b6bff42b9c4a747856e8dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  textureOutputMode: 1
   useCustomGlobalAlpha: 1
   globalAlpha: 0.5
   numFrames: 0
   startFrame: 2
   numDepthPeelLayers: 8
+  experiment_name: 
   outputDir: 
   renderRGBUnity: 1
   renderUVOpaque: 0

@@ -3,6 +3,8 @@
 	Properties
 	{
 		_MainTex("Texture", 2D) = "white" {}
+		_ObjectID("ObjectID", Int) = 0
+		_MaxVisObjects("MaxVisObjects", Int) = 2
 	}
 	SubShader
 	{
@@ -23,6 +25,8 @@
 			sampler2D _MainTex;
 			float4 _MainTex_ST;
 			sampler2D _PrevDepthTex;
+			int _ObjectID;
+			int _MaxVisObjects; 
 
 			struct appdata
 			{
@@ -48,7 +52,10 @@
 			{
 				float4 col : COLOR0; 
 				float4 uv : COLOR1;
-				float4 depth : COLOR2; 
+				float4 mask : COLOR2; 
+				float4 depth : COLOR3;
+
+				
 			};
 
 			v2f vert(appdata v)
@@ -90,8 +97,14 @@
 
 				o.col = float4(ambient + diffuse, .5); //fixed alpha for now
 				//o.col = float4(tex2D(_MainTex, i.uv).rgb, .25); 
-				//o.col = float4(i.normal, 1);
 				o.uv = float4(i.uv.x, i.uv.y, 0, 1); 
+				o.mask = float4(float(_ObjectID)/float(_MaxVisObjects), 0, 0, 0);
+
+			
+
+
+				/*if (o.mask == 1)
+					o.uv = float4(1, 0, 0, 0); */
 	
 				//float fwd = 1; 
 				//float back = 0;
@@ -100,7 +113,6 @@
 				//	fwd = 0; 
 				//	back = 1; 
 				//}
-
 				//o.uv = float4(fwd,back,0, 1);
 
 				o.depth = EncodeFloatRGBA(i.depth);
