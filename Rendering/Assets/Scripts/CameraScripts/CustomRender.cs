@@ -10,9 +10,7 @@ public class CustomRender : MonoBehaviour
     public Shader uvShader;
     public Shader depthPeelShader;
     public Shader blendShader;
-    public Shader initShader;
-    public Shader copyShader;
-    public Shader maskToFloatShader; 
+
 
     public TextureDisplay display = null;
 
@@ -20,34 +18,29 @@ public class CustomRender : MonoBehaviour
     private RenderTexture[] depthPeelBuffers = new RenderTexture[2]; // use prev depth buffer as mask for next depth peeling pass
     private Material blendMat = null;
     private Material copyMat = null;
-    private Material maskToFloatMaterial; 
 
     private int cameraID = -1;
-    private int frameID = 0; 
 
-    private new Camera camera; 
+    private  Camera cam; 
     // Start is called before the first frame update
     void Start()
     {
-        camera = GetComponent<Camera>();
+        cam = GetComponent<Camera>();
         cameraID = RenderOptions.getInstance().getIncrementalCameraId(); 
         blendMat = new Material(blendShader);
-        copyMat = new Material(copyShader);
-   //     maskToFloatMaterial = new Material(maskToFloatShader);
-
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Time.frameCount >= RenderOptions.getInstance().startFrame && Time.frameCount < RenderOptions.getInstance().startFrame + RenderOptions.getInstance().numFrames)
-        {
-            RenderImage(); 
-        }
-        if(display)
-        {
-            RenderImage(false); 
-        }
+        //if (Time.frameCount >= RenderOptions.getInstance().startFrame && Time.frameCount < RenderOptions.getInstance().startFrame + RenderOptions.getInstance().numFrames)
+        //{
+        //    RenderImage(); 
+        //}
+        //if(display)
+        //{
+        //    RenderImage(false); 
+        //}
     }
 
     public void RenderImage(bool write = true)
@@ -57,21 +50,21 @@ public class CustomRender : MonoBehaviour
         if (RenderOptions.getInstance().renderRGBUnity)
         {
             RenderTexture rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            camera.targetTexture = rgb;
-            camera.backgroundColor = new Color(0, 0, 0, 0);
+            cam.targetTexture = rgb;
+            cam.backgroundColor = new Color(0, 0, 0, 0);
 
-            camera.Render();
+            cam.Render();
 
         }
-        if (RenderOptions.getInstance().renderUVOpaque)
-        {
-            RenderTexture rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            camera.targetTexture = rt;
-            camera.RenderWithShader(uvShader, "");
-            if (write)
-                writeTextureToPng(rt, "uv");
-            rt.Release();
-        }
+        //if (RenderOptions.getInstance().renderUVOpaque)
+        //{
+        //    RenderTexture rt = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        //    camera.targetTexture = rt;
+        //    camera.RenderWithShader(uvShader, "");
+        //    if (write)
+        //        writeTextureToPng(rt, "uv");
+        //    rt.Release();
+        //}
         if (RenderOptions.getInstance().renderTransparent)
         {
             RenderTexture[] colorBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
@@ -88,16 +81,9 @@ public class CustomRender : MonoBehaviour
 
             colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            RenderBuffer[] renderTargets = new RenderBuffer[4]; // rgb, uv and depth
+            RenderBuffer[] renderTargets = new RenderBuffer[4]; // rgb, uv, mask and depth
 
-
-            //innital pass
-            //renderTargets[0] = colorBuffers[0].colorBuffer;
-            //renderTargets[1] = uvBuffers[0].colorBuffer;
-            //renderTargets[2] = depthPeelBuffers[0].colorBuffer;
-            //camera.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
-            //camera.RenderWithShader(initShader, null);
-            camera.backgroundColor = new Color(1, 1, 1, 1); 
+            cam.backgroundColor = new Color(1, 1, 1, 1); 
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
             {
@@ -109,13 +95,9 @@ public class CustomRender : MonoBehaviour
                 renderTargets[1] = uvBuffers[i].colorBuffer;
                 renderTargets[2] = maskBuffers[i].colorBuffer; 
                 renderTargets[3] = depthPeelBuffers[i%2].colorBuffer;
-                camera.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
+                cam.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
                 Shader.SetGlobalTexture("_PrevDepthTex", depthPeelBuffers[1-i%2]);
-                camera.RenderWithShader(depthPeelShader, null);
-                //Graphics.CopyTexture(depthPeelBuffers[0], depthPeelBuffers[1]); 
-                //copyMat.SetTexture("_LayerTex", depthPeelBuffers[1]);
-                //Graphics.Blit(depthPeelBuffers[0], depthPeelBuffers[1], copyMat); 
-                //   writeRenderTextureToFile(depthPeelBuffers[i % 2], "d_" + (i));
+                cam.RenderWithShader(depthPeelShader, null);
             }
 
             ////Blending
@@ -126,10 +108,6 @@ public class CustomRender : MonoBehaviour
             //    Graphics.Blit(finalImage, tmpImage, blendMat, 1);
             //    rgb = tmpImage;
             //}
-            
-            ////Using unity rendered image
-            ////if (write)
-            ////    outputTextures(finalImage, "tRGB");
 
 
             RenderTexture.ReleaseTemporary(depthBuffer);
@@ -143,20 +121,16 @@ public class CustomRender : MonoBehaviour
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
             {
-
-
                 if (display)
                 {
                     display.drawImage(i, uvBuffers[i]); 
                 }
-
                 RenderTexture.ReleaseTemporary(colorBuffers[i]);
                 RenderTexture.ReleaseTemporary(uvBuffers[i]);
-            }
+                RenderTexture.ReleaseTemporary(maskBuffers[i]);
 
+            }
         }
-        if (write)
-            ++frameID;
 
         rgb.Release(); 
 
@@ -164,15 +138,15 @@ public class CustomRender : MonoBehaviour
 
     private void outputTextures(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks)
     {
-
+        int frameID = RenderOptions.getInstance().getIncrementaFrameId(); 
 
         switch (RenderOptions.getInstance().textureOutputMode)
         {
             case RenderOptions.TextureOutputMode.PNG:
-                writeTexturesToPng(rgb, uvs, masks); 
+                writeTexturesToPng(rgb, uvs, masks, frameID); 
                 break;
             case RenderOptions.TextureOutputMode.Binary:
-                writeTexturesToBinary(rgb, uvs, masks); 
+                writeTexturesToBinary(rgb, uvs, masks, frameID); 
                 break;
             default:
                 break;
@@ -180,16 +154,16 @@ public class CustomRender : MonoBehaviour
     }
 
 
-    private void writeTexturesToPng(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks)
+    private void writeTexturesToPng(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks, int frameID)
     {
-        writeTextureToPng(rgb, "rgb"); 
+        writeTextureToPng(rgb, "rgb", frameID); 
         for(int i = 0; i< uvs.Length; ++i )
         {
-            writeTextureToPng(uvs[i], "uv_" + i); 
+            writeTextureToPng(uvs[i], "uv_" + i, frameID); 
         }
         for (int i = 0; i < masks.Length; ++i)
         {
-            writeTextureToPng(masks[i], "mask_" + i);
+            writeTextureToPng(masks[i], "mask_" + i, frameID);
         }
 
         if (masks.Length != uvs.Length)
@@ -200,7 +174,18 @@ public class CustomRender : MonoBehaviour
     }
 
 
-    private void writeTextureToPng(RenderTexture rt, string name)
+    private void writeTextureToPng(RenderTexture rt, string name, int frameID)
+    {
+        Texture2D tex = getTextureFormRenderTexture(rt); 
+        var blob = tex.EncodeToPNG();
+        string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_" + name + ".png";
+
+        File.WriteAllBytes(filename, blob);
+        Debug.Log("Wrote: " + filename);
+
+    }
+
+    private Texture2D getTextureFormRenderTexture(RenderTexture rt)
     {
         Texture2D tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
         RenderTexture old = RenderTexture.active;
@@ -208,17 +193,19 @@ public class CustomRender : MonoBehaviour
         tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
         tex.Apply();
         RenderTexture.active = old;
-
-        var blob = tex.EncodeToPNG();
-        string filename = RenderOptions.getInstance().outputDir + cameraID.ToString() + "_" + frameID + "_" + name + ".png";
-
-        File.WriteAllBytes(filename, blob);
-        Debug.Log("Wrote: " + filename);
-
+        return tex; 
     }
 
-    private void writeTexturesToBinary(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks)
+    private void writeTexturesToBinary(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks, int frameID)
     {
+        string rgbFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_rgb.png";
+        string uvFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_uv.png";
+        string maskFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_mask.png";
+
+        Texture2D texRGB = getTextureFormRenderTexture(rgb);
+        
+
+
         //Texture2D tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
         //RenderTexture old = RenderTexture.active;
         //RenderTexture.active = rt;
@@ -227,7 +214,6 @@ public class CustomRender : MonoBehaviour
         //RenderTexture.active = old;
 
         //var blob = tex.EncodeToPNG();
-        //string filename = RenderOptions.getInstance().outputDir + cameraID.ToString() + "_" + frameID + "_" + name + ".png";
 
         //File.WriteAllBytes(filename, blob);
        // Debug.Log("Wrote: " + filename);

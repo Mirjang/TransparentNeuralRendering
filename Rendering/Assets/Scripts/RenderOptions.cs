@@ -30,7 +30,8 @@ public class RenderOptions : MonoBehaviour
 
     private int numVisibleObjects; 
 
-    public int camerIDCounter = 0; 
+    public int camerIDCounter = 0;
+    public int frameIdCounter = 0; 
     // Start is called before the first frame update
     void Awake()
     {
@@ -72,6 +73,11 @@ public class RenderOptions : MonoBehaviour
     public int getIncrementalCameraId()
     {
         return camerIDCounter++; 
+    }
+
+    public int getIncrementaFrameId()
+    {
+        return frameIdCounter++;
     }
 
     //TODO
