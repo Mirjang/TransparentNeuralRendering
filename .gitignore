@@ -331,3 +331,6 @@ ASALocalRun/
 
 /Assets
 /Data
+/NeuralTexture/.vscode
+checkpoints
+results

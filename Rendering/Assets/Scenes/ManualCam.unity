@@ -597,19 +597,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa2bbf7ac3b6bff42b9c4a747856e8dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  textureOutputMode: 1
+  textureOutputMode: 2
+  exrCompression: 2
   useCustomGlobalAlpha: 1
   globalAlpha: 0.5
   numFrames: 0
   startFrame: 2
   numDepthPeelLayers: 8
-  experiment_name: 
+  experiment_name: debug
   outputDir: 
+  logOutputVerbose: 0
   renderRGBUnity: 1
   renderUVOpaque: 0
   renderTransparent: 1
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
+  frameIdCounter: 0
 --- !u!4 &482896724
 Transform:
   m_ObjectHideFlags: 0

@@ -6,9 +6,11 @@ using UnityEngine.SceneManagement;
 //Singleton storing all the options 
 public class RenderOptions : MonoBehaviour
 {
-    public enum TextureOutputMode { DontWrite, PNG, Binary};
+    public enum TextureOutputMode { DontWrite, PNG, EXR, Binary};
 
-    public TextureOutputMode textureOutputMode = TextureOutputMode.PNG; 
+    public TextureOutputMode textureOutputMode = TextureOutputMode.PNG;
+
+    public Texture2D.EXRFlags exrCompression = Texture2D.EXRFlags.CompressZIP;
 
     public bool useCustomGlobalAlpha = true;
     public float globalAlpha = .5f;
@@ -21,10 +23,12 @@ public class RenderOptions : MonoBehaviour
     public string experiment_name = ""; 
 
     public string outputDir = "";
+    public bool logOutputVerbose = true; 
 
     public bool renderRGBUnity = true;
     public bool renderUVOpaque = false;
     public bool renderTransparent = true;
+
 
     public Material default_t;
 
@@ -57,7 +61,10 @@ public class RenderOptions : MonoBehaviour
 
         Debug.Log("Output Dir: " + outputDir);
         if (System.IO.Directory.Exists(outputDir))
-            System.IO.Directory.Delete(outputDir);
+        {
+            System.IO.Directory.Delete(outputDir, true);
+
+        }
         System.IO.Directory.CreateDirectory(outputDir);
 
         assignIDtoObjects(); 

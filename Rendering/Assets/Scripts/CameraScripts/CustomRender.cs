@@ -17,7 +17,6 @@ public class CustomRender : MonoBehaviour
     private RenderTexture opaqueTexture = null;
     private RenderTexture[] depthPeelBuffers = new RenderTexture[2]; // use prev depth buffer as mask for next depth peeling pass
     private Material blendMat = null;
-    private Material copyMat = null;
 
     private int cameraID = -1;
 
@@ -148,11 +147,47 @@ public class CustomRender : MonoBehaviour
             case RenderOptions.TextureOutputMode.Binary:
                 writeTexturesToBinary(rgb, uvs, masks, frameID); 
                 break;
+            case RenderOptions.TextureOutputMode.EXR:
+                writeTexturesToEXR(rgb, uvs, masks, frameID);
+                break;
             default:
                 break;
         }
+
+        Debug.Log("Wrote frame: " + frameID); 
     }
 
+    private void writeTexturesToEXR(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks, int frameID)
+    {
+        writeTextureToEXR(rgb, "rgb", frameID);
+        for (int i = 0; i < uvs.Length; ++i)
+        {
+            writeTextureToEXR(uvs[i], "uv_" + i, frameID);
+        }
+        for (int i = 0; i < masks.Length; ++i)
+        {
+            writeTextureToEXR(masks[i], "mask_" + i, frameID);
+        }
+
+        if (masks.Length != uvs.Length)
+        {
+            Debug.LogWarning("len(UVs) != len(masks) -- should provide per pixel per layer segmentation in multi-object scenes");
+        }
+
+    }
+
+
+    private void writeTextureToEXR(RenderTexture rt, string name, int frameID)
+    {
+        Texture2D tex = getFloatTextureFormRenderTexture(rt);
+        var blob = tex.EncodeToEXR(Texture2D.EXRFlags.OutputAsFloat | RenderOptions.getInstance().exrCompression);
+        string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_" + name + ".exr";
+
+        File.WriteAllBytes(filename, blob);
+        if(RenderOptions.getInstance().logOutputVerbose)
+            Debug.Log("Wrote: " + filename);
+
+    }
 
     private void writeTexturesToPng(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks, int frameID)
     {
@@ -181,8 +216,8 @@ public class CustomRender : MonoBehaviour
         string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_" + name + ".png";
 
         File.WriteAllBytes(filename, blob);
-        Debug.Log("Wrote: " + filename);
-
+        if (RenderOptions.getInstance().logOutputVerbose)
+            Debug.Log("Wrote: " + filename);
     }
 
     private Texture2D getTextureFormRenderTexture(RenderTexture rt)
@@ -196,27 +231,92 @@ public class CustomRender : MonoBehaviour
         return tex; 
     }
 
+    private Texture2D getFloatTextureFormRenderTexture(RenderTexture rt)
+    {
+        Texture2D tex = new Texture2D(rt.width, rt.height, TextureFormat.RGBAFloat, false);
+        RenderTexture old = RenderTexture.active;
+        RenderTexture.active = rt;
+        tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        tex.Apply();
+        RenderTexture.active = old;
+        return tex;
+    }
+
+
+
     private void writeTexturesToBinary(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks, int frameID)
     {
-        string rgbFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_rgb.png";
-        string uvFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_uv.png";
-        string maskFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_mask.png";
+        int H = Screen.height, W = Screen.width; 
+        string rgbFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_rgb.bin";
+        string uvFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_uv.bin";
+        string maskFilename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_mask.bin";
 
         Texture2D texRGB = getTextureFormRenderTexture(rgb);
-        
+        var imgRGB = texRGB.GetRawTextureData();
+
+        byte[] rgbOut = new byte[H * W * 3];
+        for (int y = 0; y < H; ++y)
+        {
+            for (int x = 0; x < W; ++x)
+            {
+                Color pixel = texRGB.GetPixel(x, y);
+
+                int index = (y * H + x)*3;
+                rgbOut[index] = (byte)(pixel.r * 255);
+                rgbOut[index+1] = (byte)(pixel.g * 255);
+                rgbOut[index+2] = (byte)(pixel.b * 255);
+
+            }
+        }
 
 
-        //Texture2D tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
-        //RenderTexture old = RenderTexture.active;
-        //RenderTexture.active = rt;
-        //tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-        //tex.Apply();
-        //RenderTexture.active = old;
+        File.WriteAllBytes(rgbFilename, imgRGB);
+        if (RenderOptions.getInstance().logOutputVerbose)
+            Debug.Log("Wrote: " + rgbFilename);
 
-        //var blob = tex.EncodeToPNG();
+        byte[] uvOut = new byte[H*W*2 * uvs.Length * 4];
 
-        //File.WriteAllBytes(filename, blob);
-       // Debug.Log("Wrote: " + filename);
+        for(int layer = 0; layer < uvs.Length; ++layer)
+        {
+            var texUV = getTextureFormRenderTexture(uvs[layer]);
+            for (int y = 0; y < H; ++y)
+            {
+                for (int x = 0; x < W; ++x)
+                {
+                    Color pixel = texUV.GetPixel(x, y);
+
+                    int index = (layer * H * W + y * H + x) *8; //4... sizeof float, 2 for u and v coord
+                    System.Buffer.BlockCopy(System.BitConverter.GetBytes(pixel.r), 0, uvOut, index, 4);
+                    System.Buffer.BlockCopy(System.BitConverter.GetBytes(pixel.g), 0, uvOut, index + 4, 4);
+                }
+            }
+        }
+
+        File.WriteAllBytes(uvFilename, uvOut);
+        if (RenderOptions.getInstance().logOutputVerbose)
+            Debug.Log("Wrote: " + uvFilename);
+
+        byte[] maskOut = new byte[H*W * 1 * uvs.Length *1];
+
+        int numVisibleObjects = RenderOptions.getInstance().getNumVisibleObjects(); 
+        for (int layer = 0; layer < masks.Length; ++layer)
+        {
+            var texMask = getTextureFormRenderTexture(masks[layer]);
+            for (int y = 0; y < H; ++y)
+            {
+                for (int x = 0; x < W; ++x)
+                {
+                    Color pixel = texMask.GetPixel(x, y);
+
+                    int index = (layer * H * W + y * H + x);
+                    byte objectId = (byte) Mathf.RoundToInt(pixel.r * numVisibleObjects);
+                    maskOut[index] = objectId; 
+                }
+            }
+        }
+        File.WriteAllBytes(maskFilename, maskOut);
+        if (RenderOptions.getInstance().logOutputVerbose)
+            Debug.Log("Wrote: " + maskFilename);
     }
 
 }
