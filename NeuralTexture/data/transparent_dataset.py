@@ -39,8 +39,7 @@ def make_dataset(dir):
     while os.path.exists(os.path.join(dir, str(i) + "_rgb.exr")): 
         rgb = os.path.join(dir, str(i) + "_rgb.exr")
         uvs = sorted(glob.glob(os.path.join(dir, str(i) + "_uv_*.exr")))
-        masks = sorted(glob.glob(os.path.join(dir, str(i) + "_mask_*.exr")))
-        paths.append((rgb,uvs,masks))
+        paths.append((rgb,uvs))
         i = i+1
 
     return paths
@@ -60,15 +59,12 @@ def load_rigids(input_dir):
     return all_rigids
 
 
-def loadRGBAFloatEXR(path, channels = 3): 
+def loadRGBAFloatEXR(path, channel_names = ['R', 'G', 'B']): 
     assert(OpenEXR.isOpenExrFile(path))
-
-    channel_names = ['R', 'G', 'B', 'A']
-    channel_names = channel_names[:channels]
 
     exr_file = OpenEXR.InputFile(path)
     nparr = channels_to_ndarray(exr_file, channel_names)
-
+    exr_file.close()
     nparr = np.clip(nparr, 0.0, 1.0)
     
     #rgb = np.transpose(rgb, (1,2,0))
@@ -99,28 +95,28 @@ class TransparentDataset(BaseDataset):
         #print('GET ITEM: ', index)
         AB_path = self.AB_paths[index]
 
-        rgb_path, uv_paths, mask_paths = AB_path
+        rgb_path, uv_paths = AB_path
 
         assert(len(uv_paths) == self.opt.num_depth_layers), "len(uv_paths) != num_depth_layers"
-        assert(len(mask_paths) == self.opt.num_depth_layers), "len(mask_paths) != num_depth_layers"
         # default image dimensions
 
 
         # load image data
         #assert(IMG_DIM == self.opt.fineSize)
-        rgb_array = loadRGBAFloatEXR(rgb_path,3)
+        rgb_array = loadRGBAFloatEXR(rgb_path,['R', 'G', 'B'])
 
         uv_arrays = []
         mask_arrays = [] 
 
         for i in range(self.opt.num_depth_layers):
-            uv = loadRGBAFloatEXR(uv_paths[i],2) 
-            uv[uv==1] = 0 #rendering forces background to be 1, however here 0 is preferable --- this might cull some uv coords!!!
-            uv_arrays.append( uv )
-            mask_tmp = loadRGBAFloatEXR(mask_paths[i],1)
+            mask_tmp = loadRGBAFloatEXR(uv_paths[i],channel_names=['B'])
             mask_tmp = mask_tmp * 255
             mask_tmp[mask_tmp==255] = 0
-            mask_arrays.append( np.rint(mask_tmp).astype(np.int32) )
+            mask_arrays.append( np.rint(mask_tmp).astype(np.int32))
+            uv = loadRGBAFloatEXR(uv_paths[i], channel_names=['R','G'])
+            uv_mask = np.concatenate([mask_tmp,mask_tmp], axis=2)
+            uv[uv_mask==0] = 0 #rendering forces background to be 1, however here 0 is preferable
+            uv_arrays.append( uv )
 
         uvs = np.concatenate(uv_arrays, axis=2)
         masks = np.concatenate(mask_arrays, axis=2)

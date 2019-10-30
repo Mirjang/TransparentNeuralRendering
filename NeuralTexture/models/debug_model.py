@@ -296,8 +296,8 @@ class DebugModel(BaseModel):
 
             # initialize optimizers
             self.optimizers = []
-
-            self.optimizer_T = torch.optim.Adam(self.texture.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizer_T = torch.optim.SGD(self.texture.parameters(), opt.lr)
+            #self.optimizer_T = torch.optim.Adam(self.texture.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_T)
 
 
