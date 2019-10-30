@@ -60,7 +60,7 @@ def mkdir(path):
         os.makedirs(path)
 
 def imshow(img, axarr = plt, imgtype="tensor"):
-    npimg = img.numpy()
+    npimg = img.detach().numpy()
     if(imgtype == "tensor"):
         npimg = npimg / 2 + 0.5     # unnormalize
         npimg = np.transpose(npimg, (1, 2, 0))
