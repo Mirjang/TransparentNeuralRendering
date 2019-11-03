@@ -101,8 +101,8 @@ class TransparentDataset(BaseDataset):
 
         rgb_path, uv_paths, mask_paths = AB_path
 
-        assert(len(uv_paths) == self.opt.num_depth_layers), "len(uv_paths) != num_depth_layers"
-        assert(len(mask_paths) == self.opt.num_depth_layers), "len(mask_paths) != num_depth_layers"
+        assert(len(uv_paths) >= self.opt.num_depth_layers), "len(uv_paths) != num_depth_layers"
+        assert(len(mask_paths) >= self.opt.num_depth_layers), "len(mask_paths) != num_depth_layers"
         # default image dimensions
 
 

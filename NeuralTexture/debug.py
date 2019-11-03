@@ -12,20 +12,20 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     opt = TrainOptions()
-    opt.nObjects = 1
+
+
     opt.dataroot = "C:/Users/Patrick/Desktop/NeuralTexture/TransparentNeuralRendering/Data"
-    opt.phase = "debug"
+    opt.phase = "debug_old_format"
     opt.model = "debug"
     opt.name = "debug"
     opt.resize_or_crop = 'resize_and_crop'
-    opt.num_depth_layers = 8
+    opt.num_depth_layers = 1
     opt.dataset_mode = "transparent"
     opt.batch_size = 1
     opt.serial_batches = True,
     opt.num_threads = 1
     opt.max_dataset_size = 64
     opt.no_augmentation = True
-    opt.num_objects = 1
     opt.gpu_ids = 0
     opt.isTrain = True
     opt.checkpoints_dir = "./checkpoints"
@@ -41,9 +41,13 @@ if __name__ == '__main__':
     opt.niter_decay = 100
     opt.continue_train = False
     opt.verbose = True
-    opt.print_freq = .5
+    opt.print_freq = 1
     opt.display_freq = 5
     opt.update_html_freq = 10
+
+    opt.nObjects = 1
+    opt.num_objects = 1
+
 
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
@@ -54,31 +58,31 @@ if __name__ == '__main__':
     print('#training images = %d' % dataset_size)
     print('#training objects = %d' % opt.nObjects)
 
-    # # for i, data in enumerate(dataset):
-    # #     if(i==0):
-    # #         #print(data["paths"])
-    # #         print(data["TARGET"].shape)
-    # #         print(data["UV"].shape)
-    # #         print(data["MASK"].shape)
+    for i, data in enumerate(dataset):
+        if(i==0):
+            #print(data["paths"])
+            print(data["TARGET"].shape)
+            print(data["UV"].shape)
+            print(data["MASK"].shape)
 
-    # #         rgb_path, uv_paths, mask_paths = data["paths"]
-    # #         # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+            print(data["paths"])
+            # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
 
-    # #         # imshow(data["TARGET"][0], ax1)
-    # #         # imshow(data["UV"][0], ax2)
+            # imshow(data["TARGET"][0], ax1)
+            # imshow(data["UV"][0], ax2)
             
-    # #         #imshow(data["MASK"][0][0], imgtype = "mask")
-    # #         #print(data["UV"][0][0:2].shape)
-    # #         #imshow(data["UV"][0][0:2], imgtype = "uv")
+            imshow(data["MASK"][0][0], imgtype = "mask")
+            #print(data["UV"][0][0:2].shape)
+            imshow(data["UV"][0][0:2], imgtype = "uv")
 
 
-    # #         #imshow(data["TARGET"][0], imgtype="tensor")
+            imshow(data["TARGET"][0], imgtype="tensor")
 
-    # #         masknp = data["MASK"][0].numpy()
-    # #         print(np.unique(masknp))
+            masknp = data["MASK"][0].numpy()
+            print(np.unique(masknp))
 
-    # #         plt.show()
-    # #         print("-------------------------")
+            plt.show()
+            print("-------------------------")
 
 
 
