@@ -483,7 +483,7 @@ class DebugModel(BaseModel):
         self.optimizer_T.zero_grad()
 
         ## loss = L1(texture - target) 
-        self.loss_L1 = self.criterionL1(self.texture_col, self.target)
+        self.loss_L1 = self.criterionL1(self.sampled_texture_col, self.target)
         self.loss_L1.backward()
         self.optimizer_T.step()
         # if self.trainRenderer:

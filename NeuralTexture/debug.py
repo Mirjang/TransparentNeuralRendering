@@ -30,19 +30,19 @@ if __name__ == '__main__':
     opt.isTrain = True
     opt.checkpoints_dir = "./checkpoints"
 
-    opt.lr = .005
+    opt.lr = .5
     opt.tex_features = 3
     opt.tex_dim = 512
     opt.beta1 = .5
     opt.niter = 500
     opt.lr_policy = "lambda"
-    opt.lr_decay_iters = 10
+    opt.lr_decay_iters = 2
     opt.epoch_count = 1
     opt.niter_decay = 100
     opt.continue_train = False
     opt.verbose = True
-    opt.print_freq = 1
-    opt.display_freq = 100
+    opt.print_freq = .5
+    opt.display_freq = 5
     opt.update_html_freq = 10
 
     data_loader = CreateDataLoader(opt)
