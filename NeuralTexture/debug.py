@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
 
     opt.dataroot = "C:/Users/Patrick/Desktop/NeuralTexture/TransparentNeuralRendering/Data"
-    opt.phase = "debug_old_format"
+    opt.phase = "debug"
     opt.model = "debug"
     opt.name = "debug"
     opt.resize_or_crop = 'resize_and_crop'
