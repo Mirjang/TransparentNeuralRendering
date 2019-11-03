@@ -167,64 +167,40 @@ def define_Renderer(renderer, n_feature,ngf, norm='batch', use_dropout=False, in
 class Texture(nn.Module):
     def __init__(self, n_textures, n_features, dimensions, device):
         super(Texture, self).__init__()
+        self.device = device
+        self.n_textures = n_textures
         #self.register_parameter('data', torch.nn.Parameter(torch.randn(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
         #self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.0))
         self.register_parameter('data', torch.nn.Parameter(torch.zeros(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
-        self.n_textures = n_textures
-        self.device = device
 
-    def forward(self, uv_inputs, mask_inputs, n_layers):
+    def forward(self, uv_inputs, mask_inputs):
         layers = []
-        N, *_ =uv_inputs.shape
+        N, n_layers, *_ =mask_inputs.shape
         _, F, H, W = self.data.shape
 
-        # #for layer in range(n_layers): 
-        #     layer_idx = 2*layer
-        #     mask_layer = mask_inputs[:,layer,:,:]
-        #     # u = uv_inputs[:,layer_idx,:,:]
-        #     # v = uv_inputs[:,layer_idx+1,:,:]
+        for layer in range(n_layers): 
+            layer_idx = 2*layer
+            mask_layer = mask_inputs[:,layer,:,:]
+            u = uv_inputs[:,layer_idx,:,:]
+            v = uv_inputs[:,layer_idx+1,:,:]
 
-        #     #layer_tex = torch.zeros((N,F,H,W), device=self.device)
-   
-        #     #for texture_id in range(self.n_textures): 
-        #     for texture_id in range(1): 
-        #         object_id = texture_id #background is 0 in mask and has no texture atm
+            layer_tex = torch.zeros((N,F,H,W), device=self.device)
 
-        #         mask = mask_layer==object_id
-        #         mask = torch.zeros_like(mask)+1
-        #         # u_masked = torch.where(mask, uv_inputs[:,layer_idx,:,:], torch.zeros_like(uv_inputs[:,layer_idx,:,:]))
-        #         # v_masked = torch.where(mask, uv_inputs[:,layer_idx+1,:,:], torch.zeros_like(uv_inputs[:,layer_idx,:,:]))
-        #         # uvs = torch.stack([u_masked, v_masked], 3)
-        #         # if(texture_id==0):
-        #         #     layer_tex = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
-        #         # else: 
-        #         #     layer_tex += torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
+            for texture_id in range(self.n_textures): 
+                #background is 0 in mask and has no texture atm
+                mask = mask_layer == texture_id
+                # u_masked = torch.where(mask_layer == object_id, u, torch.zeros_like(u))
+                # v_masked = torch.where(mask_layer == object_id, v, torch.zeros_like(u))
+                uvs = torch.stack([u, v], 3)
+                sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
 
-        #         uvs = torch.stack([uv_inputs[:,0,:,:], uv_inputs[:,1,:,:]], 3)
-        #         object_tex = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
-                
-                
-        #         # if(texture_id==0):
-        #         #     layer_tex = torch.where(mask_layer == object_id, object_tex, torch.zeros_like(object_tex))
+                if(texture_id==0):
+                    layer_tex = sample * mask.float()
+                else:
+                    layer_tex = layer_tex + sample * mask.float()
 
-        #         # else:
-        #         #     layer_tex = torch.where(mask_layer == object_id, object_tex, layer_tex)
-
-                                
-        #         if(texture_id==0):
-        #             layer_tex = object_tex #* mask.float()
-
-        #         else:
-        #             layer_tex = layer_tex + object_tex * mask.float()
-
-        #     layers.append(layer_tex)
-        # #return torch.stack(layers, 1)
-        #return layers[0]
-        texture_id = 0
-        uvs = torch.stack([uv_inputs[:,0,:,:], uv_inputs[:,1,:,:]], 3)
-        return torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
-
-
+            layers.append(layer_tex)
+        return torch.stack(layers, 1)
 
 class HierarchicalTexture(nn.Module):
     def __init__(self, n_textures, n_features, dimensions, device):
@@ -274,6 +250,7 @@ def define_HierarchicalTexture(n_textures, n_features, dimensions, device, gpu_i
     #     tex = torch.nn.DataParallel(tex, gpu_ids)
     return tex
 
+
 def spherical_harmonics_basis(dir):
     # assumes that dir is a normalized direction vector with 3 components
     # output: vector with 9 coeffs
@@ -291,6 +268,8 @@ def spherical_harmonics_basis(dir):
     sh_band_2_3 = dir_x * dir_z
     sh_band_2_4 = (dir_x * dir_x - dir_y * dir_y)
     return np.array([sh_band_0,  sh_band_1_0, sh_band_1_1, sh_band_1_2,  sh_band_2_0, sh_band_2_1, sh_band_2_2, sh_band_2_3, sh_band_2_4], dtype=np.float32)
+
+
 
 class DebugModel(BaseModel):
     def name(self):
@@ -313,15 +292,14 @@ class DebugModel(BaseModel):
     def initialize(self, opt):
         BaseModel.initialize(self, opt)
         self.isTrain = opt.isTrain
-        self.nObjects = opt.nObjects
-        self.n_layers = opt.num_depth_layers
 
+        self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         self.loss_names = ['L1']
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        self.visual_names = ['texture0_col','texture1_col', 'sampled_texture_col','target']
-        #self.visual_names = ['texture0_col','texture1_col', 'texture2_col', 'sampled_texture_col','target']
+        self.visual_names = ['texture0_col','texture1_col','texture2_col', 'sampled_texture_col','target']
+
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:
@@ -346,8 +324,8 @@ class DebugModel(BaseModel):
 
             # initialize optimizers
             self.optimizers = []
-            self.optimizer_T = torch.optim.SGD(self.texture.parameters(), opt.lr)
-            #self.optimizer_T = torch.optim.Adam(self.texture.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+
+            self.optimizer_T = torch.optim.Adam(self.texture.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_T)
 
 
@@ -372,9 +350,30 @@ class DebugModel(BaseModel):
                                 tex[:,12:,:,:]
                                 ], 1)
 
+
+    def maskErosion(self, mask):
+        offsetY = int(self.opt.erosionFactor * 40)
+        # throat
+        mask2 = mask[:,:,0:-offsetY,:]
+        mask2 = torch.cat([torch.ones_like(mask[:,:,0:offsetY,:]), mask2], 2)
+        #return mask * mask2
+        # forehead
+        mask3 = mask[:,:,offsetY:,:]
+        mask3 = torch.cat([mask3, torch.ones_like(mask[:,:,0:offsetY,:])], 2)
+        mask = mask * mask2 * mask3 
+
+        offsetX = int(self.opt.erosionFactor * 15)
+        # left
+        mask4 = mask[:,:,:,0:-offsetX]
+        mask4 = torch.cat([torch.ones_like(mask[:,:,:,0:offsetX]), mask4], 3)
+        # right
+        mask5 = mask[:,:,:,offsetX:]
+        mask5 = torch.cat([mask5,torch.ones_like(mask[:,:,:,0:offsetX])], 3)
+        return mask * mask4 * mask5
+
     def forward(self):
-        self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.n_layers)
-        self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]
+        self.sampled_texture = self.texture(self.input_uv, self.input_mask)
+        self.sampled_texture_col = self.sampled_texture[:,0,0:3,:,:]
         self.texture0_col = self.texture.data[0:1,0:3,:,:]
         self.texture1_col = self.texture.data[1:2,0:3,:,:]
         self.texture2_col = self.texture.data[2:3,0:3,:,:]
@@ -384,8 +383,9 @@ class DebugModel(BaseModel):
 
         # add background from the target as input
         #mask = (self.input_uv[:,0:1,:,:] == INVALID_UV) & (self.input_uv[:,1:2,:,:] == INVALID_UV)
+        mask = self.input_mask == 0
         #mask = self.maskErosion(mask)
-        #self.mask = torch.cat([mask,mask,mask], 1)
+        self.mask = torch.cat([mask,mask,mask], 1)
         #self.background = torch.where(mask, self.target, torch.zeros_like(self.target))
         #self.features = torch.cat([self.features, self.background], 1)
 
@@ -513,7 +513,7 @@ class DebugModel(BaseModel):
         self.optimizer_T.zero_grad()
 
         ## loss = L1(texture - target) 
-        self.loss_L1 = self.criterionL1(self.texture0_col, self.target)
+        self.loss_L1 = self.criterionL1(self.sampled_texture_col, self.target)
         self.loss_L1.backward()
         self.optimizer_T.step()
         # if self.trainRenderer:

@@ -52,7 +52,10 @@
 			{
 				float4 col : COLOR0; 
 				float4 uv : COLOR1;
-				float4 depth : COLOR2;				
+				float4 mask : COLOR2; 
+				float4 depth : COLOR3;
+
+				
 			};
 
 			v2f vert(appdata v)
@@ -94,8 +97,8 @@
 
 				o.col = float4(ambient + diffuse, .5); //fixed alpha for now
 				//o.col = float4(tex2D(_MainTex, i.uv).rgb, .25); 
-				o.uv = float4(i.uv.x, i.uv.y, _ObjectID / float(255), 1);
-				//o.mask = float4(float(, 0, 0, 1);
+				o.uv = float4(i.uv.x, i.uv.y, 0, 1); 
+				o.mask = float4(float(_ObjectID)/float(255), 0, 0, 1);
 
 				/*if (o.mask == 1)
 					o.uv = float4(1, 0, 0, 0); */
