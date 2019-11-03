@@ -36,13 +36,13 @@ if __name__ == '__main__':
     opt.beta1 = .5
     opt.niter = 500
     opt.lr_policy = "lambda"
-    opt.lr_decay_iters = 2
+    opt.lr_decay_iters = 5
     opt.epoch_count = 1
     opt.niter_decay = 100
     opt.continue_train = False
     opt.verbose = True
     opt.print_freq = 1
-    opt.display_freq = 3
+    opt.display_freq = 10
     opt.update_html_freq = 10
 
     opt.nObjects = 3

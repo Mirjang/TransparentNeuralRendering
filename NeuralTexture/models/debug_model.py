@@ -187,15 +187,20 @@ class Texture(nn.Module):
             layer_tex = torch.zeros((N,F,H,W), device=self.device)
 
             for texture_id in range(self.n_textures): 
-                object_id = texture_id +1 #background is 0 in mask and has no texture atm
-                mask = mask_layer[mask_layer == layer]
-                u_masked = torch.where(mask_layer == object_id, u, torch.zeros_like(u))
-                v_masked = torch.where(mask_layer == object_id, v, torch.zeros_like(u))
-                uvs = torch.stack([u_masked, v_masked], 3)
-                layer_tex += torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
+                #background is 0 in mask and has no texture atm
+                mask = mask_layer == texture_id
+                # u_masked = torch.where(mask_layer == object_id, u, torch.zeros_like(u))
+                # v_masked = torch.where(mask_layer == object_id, v, torch.zeros_like(u))
+                uvs = torch.stack([u, v], 3)
+                sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
+
+                if(texture_id==0):
+                    layer_tex = sample * mask.float()
+                else:
+                    layer_tex = layer_tex + sample * mask.float()
 
             layers.append(layer_tex)
-        return layers[0]
+        return torch.stack(layers, 1)
 
 class HierarchicalTexture(nn.Module):
     def __init__(self, n_textures, n_features, dimensions, device):
@@ -293,7 +298,7 @@ class DebugModel(BaseModel):
         self.loss_names = ['L1']
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        self.visual_names = ['texture0_col','texture1_col', 'sampled_texture_col','target']
+        self.visual_names = ['texture0_col','texture1_col','texture2_col', 'sampled_texture_col','target']
 
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
@@ -368,9 +373,10 @@ class DebugModel(BaseModel):
 
     def forward(self):
         self.sampled_texture = self.texture(self.input_uv, self.input_mask)
-        self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]
+        self.sampled_texture_col = self.sampled_texture[:,0,0:3,:,:]
         self.texture0_col = self.texture.data[0:1,0:3,:,:]
         self.texture1_col = self.texture.data[1:2,0:3,:,:]
+        self.texture2_col = self.texture.data[2:3,0:3,:,:]
 
         #self.features = self.sh_Layer(self.sampled_texture, self.extrinsics)
         #features = torch.cat([self.input_uv[:,0:2,:,:], features], 1) #<<<<<<<<<<<<<<<<<<<<<<<<<<<
