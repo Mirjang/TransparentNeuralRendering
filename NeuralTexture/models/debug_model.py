@@ -167,13 +167,35 @@ def define_Renderer(renderer, n_feature,ngf, norm='batch', use_dropout=False, in
 class Texture(nn.Module):
     def __init__(self, n_textures, n_features, dimensions, device):
         super(Texture, self).__init__()
+        self.device = device
+        self.n_textures = n_textures
         #self.register_parameter('data', torch.nn.Parameter(torch.randn(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
         #self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.0))
         self.register_parameter('data', torch.nn.Parameter(torch.zeros(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
 
-    def forward(self, uv_inputs, texture_id):
-        uvs = torch.stack([uv_inputs[:,0,:,:], uv_inputs[:,1,:,:]], 3)
-        return torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
+    def forward(self, uv_inputs, mask_inputs):
+        layers = []
+        N, n_layers, *_ =mask_inputs.shape
+        _, F, H, W = self.data.shape
+
+        for layer in range(n_layers): 
+            layer_idx = 2*layer
+            mask_layer = mask_inputs[:,layer,:,:]
+            u = uv_inputs[:,layer_idx,:,:]
+            v = uv_inputs[:,layer_idx+1,:,:]
+
+            layer_tex = torch.zeros((N,F,H,W), device=self.device)
+
+            for texture_id in range(self.n_textures): 
+                object_id = texture_id +1 #background is 0 in mask and has no texture atm
+                mask = mask_layer[mask_layer == layer]
+                u_masked = torch.where(mask_layer == object_id, u, torch.zeros_like(u))
+                v_masked = torch.where(mask_layer == object_id, v, torch.zeros_like(u))
+                uvs = torch.stack([u_masked, v_masked], 3)
+                layer_tex += torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
+
+            layers.append(layer_tex)
+        return layers[0]
 
 class HierarchicalTexture(nn.Module):
     def __init__(self, n_textures, n_features, dimensions, device):
@@ -266,12 +288,13 @@ class DebugModel(BaseModel):
         BaseModel.initialize(self, opt)
         self.isTrain = opt.isTrain
 
-
+        self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         self.loss_names = ['L1']
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        self.visual_names = ['texture_col', 'sampled_texture_col','target']
+        self.visual_names = ['texture0_col','texture1_col', 'sampled_texture_col','target']
+
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:
@@ -304,10 +327,9 @@ class DebugModel(BaseModel):
 
     def set_input(self, input):
         self.target = input['TARGET'].to(self.device)
-        self.input_uv = input['UV'][:,:2,:,:].to(self.device)
-        self.input_mask = input['MASK'][:,:1,:,:].to(self.device)
+        self.input_uv = input['UV'].to(self.device)
+        self.input_mask = input['MASK'].to(self.device)
         self.image_paths = input['paths']
-        self.object_id = 0
 
 
     def sh_Layer(self, tex, extrinsics):
@@ -345,9 +367,11 @@ class DebugModel(BaseModel):
         return mask * mask4 * mask5
 
     def forward(self):
-        self.sampled_texture = self.texture(self.input_uv, self.object_id)
+        self.sampled_texture = self.texture(self.input_uv, self.input_mask)
         self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]
-        self.texture_col = self.texture.data[self.object_id:self.object_id+1,0:3,:,:]
+        self.texture0_col = self.texture.data[0:1,0:3,:,:]
+        self.texture1_col = self.texture.data[1:2,0:3,:,:]
+
         #self.features = self.sh_Layer(self.sampled_texture, self.extrinsics)
         #features = torch.cat([self.input_uv[:,0:2,:,:], features], 1) #<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

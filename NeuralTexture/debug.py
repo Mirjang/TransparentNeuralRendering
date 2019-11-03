@@ -42,11 +42,11 @@ if __name__ == '__main__':
     opt.continue_train = False
     opt.verbose = True
     opt.print_freq = 1
-    opt.display_freq = 5
+    opt.display_freq = 3
     opt.update_html_freq = 10
 
-    opt.nObjects = 1
-    opt.num_objects = 1
+    opt.nObjects = 3
+    opt.num_objects = 3
 
 
     data_loader = CreateDataLoader(opt)
@@ -58,31 +58,31 @@ if __name__ == '__main__':
     print('#training images = %d' % dataset_size)
     print('#training objects = %d' % opt.nObjects)
 
-    for i, data in enumerate(dataset):
-        if(i==0):
-            #print(data["paths"])
-            print(data["TARGET"].shape)
-            print(data["UV"].shape)
-            print(data["MASK"].shape)
+    # for i, data in enumerate(dataset):
+    #     if(i==0):
+    #         #print(data["paths"])
+    #         print(data["TARGET"].shape)
+    #         print(data["UV"].shape)
+    #         print(data["MASK"].shape)
 
-            print(data["paths"])
-            # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+    #         print(data["paths"])
+    #         # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
 
-            # imshow(data["TARGET"][0], ax1)
-            # imshow(data["UV"][0], ax2)
+    #         # imshow(data["TARGET"][0], ax1)
+    #         # imshow(data["UV"][0], ax2)
             
-            imshow(data["MASK"][0][0], imgtype = "mask")
-            #print(data["UV"][0][0:2].shape)
-            imshow(data["UV"][0][0:2], imgtype = "uv")
+    #         imshow(data["MASK"][0][0], imgtype = "mask")
+    #         #print(data["UV"][0][0:2].shape)
+    #         imshow(data["UV"][0][0:2], imgtype = "uv")
 
 
-            imshow(data["TARGET"][0], imgtype="tensor")
+    #         imshow(data["TARGET"][0], imgtype="tensor")
 
-            masknp = data["MASK"][0].numpy()
-            print(np.unique(masknp))
+    #         masknp = data["MASK"][0].numpy()
+    #         print(np.unique(masknp))
 
-            plt.show()
-            print("-------------------------")
+    #         plt.show()
+    #         print("-------------------------")
 
 
 
