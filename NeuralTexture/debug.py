@@ -16,13 +16,13 @@ if __name__ == '__main__':
 
     opt.dataroot = "C:/Users/Patrick/Desktop/NeuralTexture/TransparentNeuralRendering/Data"
     opt.phase = "debug"
-    opt.model = "debug"
-    opt.name = "debug"
+    opt.model = "singleLayer"
+    opt.name = "singleLayer"
     opt.resize_or_crop = 'resize_and_crop'
-    opt.num_depth_layers = 8
+    opt.num_depth_layers = 1
     opt.dataset_mode = "transparent"
     opt.batch_size = 1
-    opt.serial_batches = True,
+    opt.serial_batches = True
     opt.num_threads = 1
     opt.max_dataset_size = 64
     opt.no_augmentation = True
@@ -30,19 +30,19 @@ if __name__ == '__main__':
     opt.isTrain = True
     opt.checkpoints_dir = "./checkpoints"
 
-    opt.lr = .1
+    opt.lr =.1
     opt.tex_features = 3
     opt.tex_dim = 512
     opt.beta1 = .5
     opt.niter = 500
     opt.lr_policy = "lambda"
-    opt.lr_decay_iters = 10
+    opt.lr_decay_iters = 50
     opt.epoch_count = 1
     opt.niter_decay = 100
     opt.continue_train = False
     opt.verbose = True
     opt.print_freq = 5
-    opt.display_freq = 50
+    opt.display_freq = 10
     opt.update_html_freq = 10
 
     opt.nObjects = 2
@@ -59,28 +59,36 @@ if __name__ == '__main__':
 
     # for i, data in enumerate(dataset):
     #     if(i==0):
-            #print(data["paths"])
-            # print(data["TARGET"].shape)
-            # print(data["UV"].shape)
-            # print(data["MASK"].shape)
+    #         #print(data["paths"])
+    #         # print(data["TARGET"].shape)
+    #         # print(data["UV"].shape)
+    #         # print(data["MASK"].shape)
 
-            # rgb_path, uv_paths = data["paths"]
-            # # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+    #         # rgb_path, uv_paths = data["paths"]
+    #         # # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
 
-            # # imshow(data["TARGET"][0], ax1)
-            # # imshow(data["UV"][0], ax2)
+    #         # # imshow(data["TARGET"][0], ax1)
+    #         # # imshow(data["UV"][0], ax2)
+    #         import torch
+
+    #         imshow(data["MASK"][0][0], imgtype = "mask")
+    #         # #print(data["UV"][0][0:2].shape)
+    #         # imshow(data["UV"][0][0:2], imgtype = "uv")
+
             
-            # imshow(data["MASK"][0][0], imgtype = "mask")
-            # #print(data["UV"][0][0:2].shape)
-            # imshow(data["UV"][0][0:2], imgtype = "uv")
+    #         mask = data["MASK"][0][0]
+    #         layer_tex = torch.where(mask == 0, torch.zeros_like(mask)+255, torch.zeros_like(mask))
+    #         imshow(layer_tex, imgtype="mask")
+    #         layer_tex = torch.where(mask == 1, torch.zeros_like(mask)+255, torch.zeros_like(mask))
+    #         imshow(layer_tex, imgtype="mask")            
+    #         layer_tex = torch.where(mask == 2, torch.zeros_like(mask)+255, torch.zeros_like(mask))
+    #         imshow(layer_tex, imgtype="mask")
+    #         # imshow(data["TARGET"][0], imgtype="tensor")
 
+    #         # masknp = data["MASK"][0].numpy()
+    #         # print(np.unique(masknp))
 
-            # imshow(data["TARGET"][0], imgtype="tensor")
-
-            # masknp = data["MASK"][0].numpy()
-            # print(np.unique(masknp))
-
-    #         plt.show()
+    # #         plt.show()
     #         print("-------------------------")
 
 
@@ -119,7 +127,7 @@ if __name__ == '__main__':
 
                 for label, image in visuals.items():
                     print("Vis:" + label)
-                    print(image.shape)
+                    #print(image.shape)
                     imshow(image[0], imgtype="tensor")
 
                 #visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
