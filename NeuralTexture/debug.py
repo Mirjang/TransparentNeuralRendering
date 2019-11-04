@@ -30,13 +30,13 @@ if __name__ == '__main__':
     opt.isTrain = True
     opt.checkpoints_dir = "./checkpoints"
 
-    opt.lr = .5
+    opt.lr = .05
     opt.tex_features = 3
     opt.tex_dim = 512
     opt.beta1 = .5
     opt.niter = 500
     opt.lr_policy = "lambda"
-    opt.lr_decay_iters = 5
+    opt.lr_decay_iters = 20
     opt.epoch_count = 1
     opt.niter_decay = 100
     opt.continue_train = False
