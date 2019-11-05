@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     opt.lr = .05
     opt.tex_features = 3
-    opt.tex_dim = 512
+    opt.tex_dim = 256
     opt.beta1 = .5
     opt.niter = 500
     opt.lr_policy = "lambda"

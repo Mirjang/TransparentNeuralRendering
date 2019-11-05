@@ -175,8 +175,8 @@ class Texture(nn.Module):
 
     def forward(self, uv_inputs, mask_inputs):
         layers = []
-        N, n_layers, *_ =mask_inputs.shape
-        _, F, H, W = self.data.shape
+        N, n_layers, H, W =mask_inputs.shape
+        _, F, *_ = self.data.shape
 
         for layer in range(n_layers): 
             layer_idx = 2*layer
@@ -185,8 +185,9 @@ class Texture(nn.Module):
             v = uv_inputs[:,layer_idx+1,:,:]
 
             layer_tex = torch.zeros((N,F,H,W), device=self.device)
-
-            for texture_id in range(self.n_textures): 
+            objects_in_mask = torch.unique(mask_layer)
+            #for texture_id in range(self.n_textures): 
+            for texture_id in objects_in_mask: 
                 #background is 0 in mask and has no texture atm
                 mask = mask_layer == texture_id
                 # u_masked = torch.where(mask_layer == object_id, u, torch.zeros_like(u))
@@ -194,10 +195,7 @@ class Texture(nn.Module):
                 uvs = torch.stack([u, v], 3)
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
 
-                if(texture_id==0):
-                    layer_tex = sample * mask.float()
-                else:
-                    layer_tex = layer_tex + sample * mask.float()
+                layer_tex = layer_tex + sample * mask.float()
 
             layers.append(layer_tex)
         return torch.stack(layers, 1)
