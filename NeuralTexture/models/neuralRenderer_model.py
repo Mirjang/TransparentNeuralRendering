@@ -151,8 +151,7 @@ class UnetRenderer(nn.Module):
 
         self.model = unet_block
 
-    def forward(self, feature_map, expressions):
-        # TODO incorporat expressions
+    def forward(self, feature_map):
         return self.model(feature_map)
 
 def define_Renderer(renderer, n_feature,ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
@@ -265,9 +264,9 @@ def spherical_harmonics_basis(dir):
 
 
 
-class DebugModel(BaseModel):
+class NeuralRendererModel(BaseModel):
     def name(self):
-        return 'DebugModel'
+        return 'NeuralRendererModel'
 
     @staticmethod
     def modify_commandline_options(parser, is_train=True):
@@ -289,7 +288,7 @@ class DebugModel(BaseModel):
 
         self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
-        self.loss_names = ['L1']
+        self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
 
         self.visual_names = []
         self.nObjects = opt.nObjects
@@ -302,13 +301,13 @@ class DebugModel(BaseModel):
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:
-            self.model_names = ['texture']
+            self.model_names = ['netG', 'netD', 'texture']
         else:  # during test time, only load Gs
-            self.model_names = ['texture']
+            self.model_names = ['netG', 'texture']
 
 
         # load/define networks
-        #self.netG = define_Renderer(opt.rendererType, opt.tex_features + 3, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        self.netG = define_Renderer(opt.rendererType, opt.tex_features * opt.num_depth_layers, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
 
         # texture
@@ -316,17 +315,34 @@ class DebugModel(BaseModel):
         self.texture = define_Texture(opt.nObjects, opt.tex_features, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
        
         if self.isTrain:
+            use_sigmoid = opt.no_lsgan
+            self.netD = networks.define_D(opt.tex_features * opt.num_depth_layers + opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
+
             # define loss functions
+            self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan).to(self.device)
             self.criterionL1 = torch.nn.L1Loss()
             self.criterionL1Smooth = torch.nn.SmoothL1Loss()
             self.criterionL2 = torch.nn.MSELoss()
 
             # initialize optimizers
             self.optimizers = []
+            if self.trainRenderer:
+                self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizers.append(self.optimizer_G)
+                self.optimizers.append(self.optimizer_D)
 
             self.optimizer_T = torch.optim.Adam(self.texture.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_T)
 
+
+            # print('type netG:')
+            # for param in self.netG.parameters():
+            #     print(type(param.data), param.size())
+            # print('type texture:')
+            # for param in self.texture.parameters():
+            #     print(type(param.data), param.size())
+            # print('-----')
 
 
     def set_input(self, input):
@@ -361,19 +377,17 @@ class DebugModel(BaseModel):
         # self.texture1_col = self.texture.data[1:2,0:3,:,:]
         # self.texture2_col = self.texture.data[2:3,0:3,:,:]
 
+        #TODO get extrinsics for SH layer
         #self.features = self.sh_Layer(self.sampled_texture, self.extrinsics)
-        #features = torch.cat([self.input_uv[:,0:2,:,:], features], 1) #<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-        # add background from the target as input
-        #mask = (self.input_uv[:,0:1,:,:] == INVALID_UV) & (self.input_uv[:,1:2,:,:] == INVALID_UV)
-        mask = self.input_mask == 0
-        self.mask = torch.cat([mask,mask,mask], 1)
+        # mask = self.input_mask == 0
+        # self.mask = torch.cat([mask,mask,mask], 1)
         #self.background = torch.where(mask, self.target, torch.zeros_like(self.target))
         #self.features = torch.cat([self.features, self.background], 1)
 
         #self.background = mask
 
-        #self.fake = self.netG(self.features, self.expressions)
+        self.fake = self.netG(self.features)
 
 
 
@@ -492,32 +506,32 @@ class DebugModel(BaseModel):
     def optimize_parameters(self, epoch_iter):
         self.forward()
 
-        self.optimizer_T.zero_grad()
+        # self.optimizer_T.zero_grad()
 
-        ## loss = L1(texture - target) 
-        self.loss_L1 = self.criterionL1(self.sampled_texture_col, self.target)
-        self.loss_L1.backward()
-        self.optimizer_T.step()
-        # if self.trainRenderer:
-        #     # update Discriminator
-        #     self.set_requires_grad(self.netD, True)
-        #     self.optimizer_D.zero_grad()
-        #     self.backward_D()
-        #     self.optimizer_D.step()
+        # ## loss = L1(texture - target) 
+        # self.loss_L1 = self.criterionL1(self.sampled_texture_col, self.target)
+        # self.loss_L1.backward()
+        # self.optimizer_T.step()
+        if self.trainRenderer:
+            # update Discriminator
+            self.set_requires_grad(self.netD, True)
+            self.optimizer_D.zero_grad()
+            self.backward_D()
+            self.optimizer_D.step()
 
-        #     # update Generator
-        #     self.set_requires_grad(self.netD, False)
-        #     self.optimizer_G.zero_grad()
-        #     self.optimizer_T.zero_grad()
+            # update Generator
+            self.set_requires_grad(self.netD, False)
+            self.optimizer_G.zero_grad()
+            self.optimizer_T.zero_grad()
 
-        #     self.backward_G(epoch_iter)
+            self.backward_G(epoch_iter)
 
-        #     self.optimizer_G.step()
-        #     self.optimizer_T.step()
+            self.optimizer_G.step()
+            self.optimizer_T.step()
 
-        # else:
-        #     # update texture
-        #     self.optimizer_T.zero_grad()
-        #     self.backward_D()
-        #     self.backward_G(epoch_iter)
-        #     self.optimizer_T.step()
+        else:
+            # update texture
+            self.optimizer_T.zero_grad()
+            self.backward_D()
+            self.backward_G(epoch_iter)
+            self.optimizer_T.step()

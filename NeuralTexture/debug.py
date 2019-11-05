@@ -16,10 +16,16 @@ if __name__ == '__main__':
 
     opt.dataroot = "C:/Users/Patrick/Desktop/NeuralTexture/TransparentNeuralRendering/Data"
     opt.phase = "debug"
-    opt.model = "debug"
-    opt.name = "debug"
+    opt.model = "neuralRenderer"
+    opt.name = "NeuralRenderer"
+    # opt.model = "debug"
+    # opt.name = "debug"
+
+    opt.rendererType = 'UNET_5_level'
     opt.resize_or_crop = 'resize_and_crop'
-    opt.num_depth_layers = 1
+    opt.ngf = 64
+
+    opt.num_depth_layers = 8
     opt.dataset_mode = "transparent"
     opt.batch_size = 1
     opt.serial_batches = True,
