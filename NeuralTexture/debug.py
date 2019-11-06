@@ -14,7 +14,6 @@ if __name__ == '__main__':
     opt = TrainOptions().parse()
 
 
-    opt.dataroot = "/home/mirjang/Desktop/NeuralTextures/TransparentNeuralRendering/Data"
     opt.phase = "debug"
     opt.model = "neuralRenderer"
     opt.name = "NeuralRenderer"
@@ -26,7 +25,6 @@ if __name__ == '__main__':
     opt.ngf = 64
 
     opt.num_depth_layers = 8
-    opt.dataset_mode = "transparent"
     opt.batch_size = 1
     # opt.serial_batches = True,
     # opt.num_threads = 1
@@ -36,16 +34,13 @@ if __name__ == '__main__':
     # opt.isTrain = True
     # opt.checkpoints_dir = "./checkpoints"
 
-    opt.lr = .05
     opt.tex_features = 3
     opt.tex_dim = 256
     opt.beta1 = .5
     opt.niter = 500
-    opt.lr_policy = "lambda"
     opt.lr_decay_iters = 20
     opt.epoch_count = 1
     opt.niter_decay = 100
-    opt.continue_train = False
     opt.verbose = True
     opt.print_freq = 1
     opt.display_freq = 10
@@ -118,22 +113,12 @@ if __name__ == '__main__':
             model.set_input(data)
             model.optimize_parameters(epoch)
 
-
-            # TODO: Copy this from original for proper training
             if total_steps % opt.display_freq == 0:
                 save_result = total_steps % opt.update_html_freq == 0
                 visuals = model.get_current_visuals()
 
-                # for label, image in visuals.items():
-                #     print("Vis:" + label)
-                #     print(image.shape)
-                #     imshow(image[0], imgtype="tensor")
 
                 visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
-
-            # if total_steps % opt.print_freq == 0:
-            #     losses = model.get_current_losses()
-            #     print(losses)
 
             if total_steps % opt.print_freq == 0:
                 losses = model.get_current_losses()
@@ -153,8 +138,8 @@ if __name__ == '__main__':
     #         model.save_networks('latest')
     #         model.save_networks(epoch)
 
-    #     print('End of epoch %d / %d \t Time Taken: %d sec' %
-    #           (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
-    #     model.update_learning_rate()
+        print('End of epoch %d / %d \t Time Taken: %d sec' %
+              (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
+        model.update_learning_rate()
 
 
