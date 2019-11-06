@@ -11,10 +11,10 @@ import glob
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    opt = TrainOptions()
+    opt = TrainOptions().parse()
 
 
-    opt.dataroot = "C:/Users/Patrick/Desktop/NeuralTexture/TransparentNeuralRendering/Data"
+    opt.dataroot = "/home/mirjang/Desktop/NeuralTextures/TransparentNeuralRendering/Data"
     opt.phase = "debug"
     opt.model = "neuralRenderer"
     opt.name = "NeuralRenderer"
@@ -28,13 +28,13 @@ if __name__ == '__main__':
     opt.num_depth_layers = 8
     opt.dataset_mode = "transparent"
     opt.batch_size = 1
-    opt.serial_batches = True,
-    opt.num_threads = 1
-    opt.max_dataset_size = 64
-    opt.no_augmentation = True
-    opt.gpu_ids = 0
-    opt.isTrain = True
-    opt.checkpoints_dir = "./checkpoints"
+    # opt.serial_batches = True,
+    # opt.num_threads = 1
+    # opt.max_dataset_size = 64
+    # opt.no_augmentation = True
+    # opt.gpu_ids = "0"
+    # opt.isTrain = True
+    # opt.checkpoints_dir = "./checkpoints"
 
     opt.lr = .05
     opt.tex_features = 3
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     #     print('load renderer')
     #     model.loadModules(opt, opt.renderer, ['netD','netG'])
 
-    #visualizer = Visualizer(opt)
+    visualizer = Visualizer(opt)
     total_steps = 0
 
     for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
@@ -111,7 +111,7 @@ if __name__ == '__main__':
             iter_start_time = time.time()
             if total_steps % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
-            #visualizer.reset()
+            visualizer.reset()
             total_steps += opt.batch_size
             epoch_iter += opt.batch_size
             
@@ -124,16 +124,23 @@ if __name__ == '__main__':
                 save_result = total_steps % opt.update_html_freq == 0
                 visuals = model.get_current_visuals()
 
-                for label, image in visuals.items():
-                    print("Vis:" + label)
-                    print(image.shape)
-                    imshow(image[0], imgtype="tensor")
+                # for label, image in visuals.items():
+                #     print("Vis:" + label)
+                #     print(image.shape)
+                #     imshow(image[0], imgtype="tensor")
 
-                #visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
+                visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
+
+            # if total_steps % opt.print_freq == 0:
+            #     losses = model.get_current_losses()
+            #     print(losses)
 
             if total_steps % opt.print_freq == 0:
                 losses = model.get_current_losses()
-                print(losses)
+                t = (time.time() - iter_start_time) / opt.batch_size
+                visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
+                #if opt.display_id > 0:
+                #    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
                 
     #         if total_steps % opt.save_latest_freq == 0:
     #             print('saving the latest model (epoch %d, total_steps %d)' % (epoch, total_steps))
