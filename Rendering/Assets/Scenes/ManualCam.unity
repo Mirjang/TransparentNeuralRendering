@@ -606,6 +606,7 @@ MonoBehaviour:
   numDepthPeelLayers: 8
   experiment_name: debug
   outputDir: 
+  isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
   renderUVOpaque: 0

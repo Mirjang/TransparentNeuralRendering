@@ -14,7 +14,7 @@ public class RenderOptions : MonoBehaviour
 
     public bool useCustomGlobalAlpha = true;
     public float globalAlpha = .5f;
-
+    
     public int numFrames = 1;
     public int startFrame = 2;
 
@@ -23,6 +23,7 @@ public class RenderOptions : MonoBehaviour
     public string experiment_name = ""; 
 
     public string outputDir = "";
+    public bool isTrainSet = true; 
     public bool logOutputVerbose = true; 
 
     public bool renderRGBUnity = true;
@@ -45,7 +46,7 @@ public class RenderOptions : MonoBehaviour
         }
         if (outputDir == "")
         {
-            outputDir = Application.dataPath + "/../../Data/" + experiment_name + "/";
+            outputDir = Application.dataPath + "/../../Data/" + experiment_name + "/" + (isTrainSet?"train/":"test/");
         }
         parseOptionsFromFile();
 

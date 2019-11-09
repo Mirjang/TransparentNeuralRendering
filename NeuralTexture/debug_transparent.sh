@@ -2,13 +2,13 @@ set -ex
 
 DATASETS_DIR=/home/mirjang/Desktop/NeuralTextures/TransparentNeuralRendering/Data
 # objects
-#OBJECT=Globe
+DATA=debug
 
 # renderer
 RENDERER=MultiTarget-neuralRenderer_200
 
 # models
-MODEL=debug
+MODEL=neuralRenderer
 #MODEL=pix2pix
 
 # optimizer parameters

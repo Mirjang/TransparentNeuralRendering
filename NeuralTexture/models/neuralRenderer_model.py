@@ -302,7 +302,7 @@ class NeuralRendererModel(BaseModel):
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:
-            self.model_names = ['netG', 'netD', 'texture']
+            self.model_names = ['netG', 'texture']
         else:  # during test time, only load Gs
             self.model_names = ['netG', 'texture']
 
@@ -317,8 +317,8 @@ class NeuralRendererModel(BaseModel):
        
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
-            self.netD = networks.define_D(opt.tex_features * opt.num_depth_layers + opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
-            self.fake_AB_pool = ImagePool(opt.pool_size)
+            #self.netD = networks.define_D(opt.tex_features * opt.num_depth_layers + opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
+            #self.fake_AB_pool = ImagePool(opt.pool_size)
 
             # define loss functions
             self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan).to(self.device)
@@ -330,9 +330,9 @@ class NeuralRendererModel(BaseModel):
             self.optimizers = []
             if self.trainRenderer:
                 self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-                self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+                #self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
                 self.optimizers.append(self.optimizer_G)
-                self.optimizers.append(self.optimizer_D)
+                #self.optimizers.append(self.optimizer_D)
 
             self.optimizer_T = torch.optim.Adam(self.texture.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_T)
@@ -470,12 +470,12 @@ class NeuralRendererModel(BaseModel):
        
 
         # Second, G(A) = B
-        if self.opt.lossType == 'L1':
-            self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
-        elif self.opt.lossType == 'VGG':
-            self.loss_G_L1 = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_L1 * 0.001 # vgg loss is quite high
-        else:
-            self.loss_G_L1 = fake_weight * self.criterionL2(self.fake, self.target) * self.opt.lambda_L1
+     #   if self.opt.lossType == 'L1':
+        self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
+        # elif self.opt.lossType == 'VGG':
+        #     self.loss_G_L1 = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_L1 * 0.001 # vgg loss is quite high
+        # else:
+        #     self.loss_G_L1 = fake_weight * self.criterionL2(self.fake, self.target) * self.opt.lambda_L1
 
         # col tex loss
         self.loss_G_L1 += texture_weight * self.criterionL1(self.sampled_texture_col, self.target) * self.opt.lambda_L1

@@ -14,8 +14,6 @@ if __name__ == '__main__':
     opt = TrainOptions().parse()
 
 
-    opt.phase = "debug"
-    opt.model = "neuralRenderer"
     opt.name = "NeuralRenderer"
     # opt.model = "debug"
     # opt.name = "debug"
