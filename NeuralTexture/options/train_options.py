@@ -32,7 +32,7 @@ class TrainOptions(BaseOptions):
 
 
         parser.add_argument('--num_depth_layers', type=int, default=8, help='number of layers contained in uv and mask files')
-        parser.add_argument('--num_objects', type=int, default=1, help='total number of objects in scene')
+        parser.add_argument('--nObjects', type=int, default=1, help='total number of objects in scene')
 
 
         self.isTrain = True

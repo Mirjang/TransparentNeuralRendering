@@ -293,7 +293,7 @@ class NeuralRendererModel(BaseModel):
 
         self.visual_names = []
         self.nObjects = opt.nObjects
-        for i in range(opt.nObjects):
+        for i in range(self.nObjects):
             self.visual_names.append(str("texture"+str(i)+"_col"))
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
@@ -313,7 +313,7 @@ class NeuralRendererModel(BaseModel):
 
         # texture
         
-        self.texture = define_Texture(opt.nObjects, opt.tex_features, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
+        self.texture = define_Texture(self.nObjects, opt.tex_features, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
        
         if self.isTrain:
             use_sigmoid = opt.no_lsgan

@@ -22,7 +22,7 @@ if __name__ == '__main__':
     opt.resize_or_crop = 'resize_and_crop'
     opt.ngf = 64
 
-    opt.num_depth_layers = 8
+    opt.num_depth_layers = 1
     opt.batch_size = 1
     # opt.serial_batches = True,
     # opt.num_threads = 1
@@ -34,18 +34,10 @@ if __name__ == '__main__':
 
     opt.tex_features = 3
     opt.tex_dim = 256
-    opt.beta1 = .5
-    opt.niter = 500
-    opt.lr_decay_iters = 20
-    opt.epoch_count = 1
-    opt.niter_decay = 100
     opt.verbose = True
     opt.print_freq = 1
-    opt.display_freq = 10
-    opt.update_html_freq = 10
-
-    opt.nObjects = 3
-    opt.num_objects = 3
+    opt.display_freq = 5
+    opt.update_html_freq = 5
 
 
     data_loader = CreateDataLoader(opt)
