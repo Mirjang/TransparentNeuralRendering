@@ -10,7 +10,7 @@ rem renderer
 set RENDERER=MultiTarget-neuralRenderer_200
 
 rem models
-set MODEL=debug
+set MODEL=neuralRenderer
 
 rem #MODEL=pix2pix
 

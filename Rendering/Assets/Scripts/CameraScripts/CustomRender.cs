@@ -68,7 +68,6 @@ public class CustomRender : MonoBehaviour
         {
             RenderTexture[] colorBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
             RenderTexture[] uvBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
-            RenderTexture[] maskBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
 
             colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
@@ -80,7 +79,7 @@ public class CustomRender : MonoBehaviour
 
             colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            RenderBuffer[] renderTargets = new RenderBuffer[4]; // rgb, uv, mask and depth
+            RenderBuffer[] renderTargets = new RenderBuffer[3]; // rgb, uv, mask and depth
 
             cam.backgroundColor = new Color(1, 1, 1, 1); 
 
@@ -88,12 +87,10 @@ public class CustomRender : MonoBehaviour
             {
                 colorBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
                 uvBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-                maskBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
                 renderTargets[0] = colorBuffers[i].colorBuffer;
                 renderTargets[1] = uvBuffers[i].colorBuffer;
-                renderTargets[2] = maskBuffers[i].colorBuffer; 
-                renderTargets[3] = depthPeelBuffers[i%2].colorBuffer;
+                renderTargets[2] = depthPeelBuffers[i%2].colorBuffer;
                 cam.SetTargetBuffers(renderTargets, depthBuffer.depthBuffer);
                 Shader.SetGlobalTexture("_PrevDepthTex", depthPeelBuffers[1-i%2]);
                 cam.RenderWithShader(depthPeelShader, null);
@@ -115,7 +112,7 @@ public class CustomRender : MonoBehaviour
 
             if (write)
             {
-                outputTextures(rgb, uvBuffers, maskBuffers);
+                outputTextures(rgb, uvBuffers);
             }
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
@@ -126,7 +123,6 @@ public class CustomRender : MonoBehaviour
                 }
                 RenderTexture.ReleaseTemporary(colorBuffers[i]);
                 RenderTexture.ReleaseTemporary(uvBuffers[i]);
-                RenderTexture.ReleaseTemporary(maskBuffers[i]);
 
             }
         }
@@ -135,20 +131,21 @@ public class CustomRender : MonoBehaviour
 
     }
 
-    private void outputTextures(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks)
+    private void outputTextures(RenderTexture rgb, RenderTexture[] uvs)
     {
         int frameID = RenderOptions.getInstance().getIncrementaFrameId(); 
 
         switch (RenderOptions.getInstance().textureOutputMode)
         {
-            case RenderOptions.TextureOutputMode.PNG:
-                writeTexturesToPng(rgb, uvs, masks, frameID); 
-                break;
-            case RenderOptions.TextureOutputMode.Binary:
-                writeTexturesToBinary(rgb, uvs, masks, frameID); 
-                break;
+            //broke this when adding mask to b channel of uv tex
+            //case RenderOptions.TextureOutputMode.PNG:
+            //    writeTexturesToPng(rgb, uvs, frameID); 
+            //    break;
+            //case RenderOptions.TextureOutputMode.Binary:
+            //    writeTexturesToBinary(rgb, uvs, frameID); 
+            //    break;
             case RenderOptions.TextureOutputMode.EXR:
-                writeTexturesToEXR(rgb, uvs, masks, frameID);
+                writeTexturesToEXR(rgb, uvs, frameID);
                 break;
             default:
                 break;
@@ -157,21 +154,12 @@ public class CustomRender : MonoBehaviour
         Debug.Log("Wrote frame: " + frameID); 
     }
 
-    private void writeTexturesToEXR(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks, int frameID)
+    private void writeTexturesToEXR(RenderTexture rgb, RenderTexture[] uvs, int frameID)
     {
         writeTextureToEXR(rgb, "rgb", frameID);
         for (int i = 0; i < uvs.Length; ++i)
         {
             writeTextureToEXR(uvs[i], "uv_" + i, frameID);
-        }
-        for (int i = 0; i < masks.Length; ++i)
-        {
-            writeTextureToEXR(masks[i], "mask_" + i, frameID);
-        }
-
-        if (masks.Length != uvs.Length)
-        {
-            Debug.LogWarning("len(UVs) != len(masks) -- should provide per pixel per layer segmentation in multi-object scenes");
         }
 
     }
