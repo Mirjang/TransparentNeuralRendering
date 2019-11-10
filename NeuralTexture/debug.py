@@ -24,16 +24,7 @@ if __name__ == '__main__':
 
     opt.num_depth_layers = 1
     opt.batch_size = 1
-    # opt.serial_batches = True,
-    # opt.num_threads = 1
-    # opt.max_dataset_size = 64
-    # opt.no_augmentation = True
-    # opt.gpu_ids = "0"
-    # opt.isTrain = True
-    # opt.checkpoints_dir = "./checkpoints"
 
-    opt.tex_features = 3
-    opt.tex_dim = 256
     opt.verbose = True
     opt.print_freq = 1
     opt.display_freq = 5
@@ -114,8 +105,8 @@ if __name__ == '__main__':
                 losses = model.get_current_losses()
                 t = (time.time() - iter_start_time) / opt.batch_size
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
-                #if opt.display_id > 0:
-                #    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
+                if opt.display_id > 0:
+                   visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
                 
     #         if total_steps % opt.save_latest_freq == 0:
     #             print('saving the latest model (epoch %d, total_steps %d)' % (epoch, total_steps))

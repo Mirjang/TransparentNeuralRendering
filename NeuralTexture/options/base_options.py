@@ -55,8 +55,6 @@ class BaseOptions():
 
         parser.add_argument('--no_spherical_harmonics', action='store_true', help='if specified, no sh layers are used')
 
-        parser.add_argument('--erosionFactor', type=float, default=1.0, help='scaling factor for erosion of the background.')
-
         self.initialized = True
         return parser
 
