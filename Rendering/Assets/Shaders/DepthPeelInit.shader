@@ -27,8 +27,6 @@ Shader "Custom/DepthPeel/Init" {
 
 				struct a2v {
 					float4 vertex : POSITION;
-					float3 normal : NORMAL;
-					float4 tangent : TANGENT;
 					float2 uv: TEXCOORD0;
 				};
 
@@ -36,11 +34,6 @@ Shader "Custom/DepthPeel/Init" {
 				{
 					float4 pos : SV_POSITION;
 					float2 uv : TEXCOORD0;
-					float3 lightDir: TEXCOORD1;
-					float3 viewDir : TEXCOORD2;
-					float3 normal : NORMAL;
-
-					float depth : TEXCOORD3;
 				};
 
 				struct f2out
@@ -56,39 +49,19 @@ Shader "Custom/DepthPeel/Init" {
 					o.pos = UnityObjectToClipPos(v.vertex);
 					o.uv = v.uv;
 
-					TANGENT_SPACE_ROTATION;
-					o.lightDir = mul(rotation, ObjSpaceLightDir(v.vertex)).xyz;
-					o.viewDir = mul(rotation, ObjSpaceViewDir(v.vertex)).xyz;
-					o.normal = v.normal;
-
-					o.depth = COMPUTE_DEPTH_01;
-
 					return o;
 				}
 
 				f2out frag(v2f i) : SV_Target {
-					fixed3 tangentLightDir = normalize(i.lightDir);
-					fixed3 tangentViewDir = normalize(i.viewDir);
-					fixed3 tangentNormal = UnpackNormal(tex2D(_BumpMap, i.uv));
-
-					//Lighting
-					fixed3 tangentLightDir = normalize(i.lightDir);
-					fixed3 tangentViewDir = normalize(i.viewDir);
-					fixed3 tangentNormal = i.normal;
-
-					fixed3 albedo = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
-					fixed3 ambient = UNITY_LIGHTMODEL_AMBIENT.xyz * albedo;
-					fixed3 diffuse = _LightColor0.rgb * albedo * max(0, dot(tangentNormal, tangentLightDir));
-
 
 
 					f2out o;
 
-					o.col = float4(ambient + diffuse, 1); //fixed alpha for now
+					o.col = float4(0,0,0, 1); //fixed alpha for now
 					//o.col = float4(tex2D(_MainTex, i.uv).rgb, .25); 
 					//o.col = float4(i.normal, 1);
-					o.uv = float4(i.uv.x, i.uv.y, 0, 1);
-					o.depth = EncodeFloatRGBA(i.depth);
+					o.uv = float4(0,0,0, 1);
+					o.depth = EncodeFloatRGBA(1);
 
 					return o;
 				}

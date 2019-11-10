@@ -10,12 +10,10 @@ public class CustomRender : MonoBehaviour
     public Shader uvShader;
     public Shader depthPeelShader;
     public Shader blendShader;
-
+    public Shader initShader; 
 
     public TextureDisplay display = null;
 
-    private RenderTexture opaqueTexture = null;
-    private RenderTexture[] depthPeelBuffers = new RenderTexture[2]; // use prev depth buffer as mask for next depth peeling pass
     private Material blendMat = null;
 
     private int cameraID = -1;
@@ -68,7 +66,7 @@ public class CustomRender : MonoBehaviour
         {
             RenderTexture[] colorBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
             RenderTexture[] uvBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
-
+            RenderTexture[] depthPeelBuffers = new RenderTexture[2]; // use prev depth buffer as mask for next depth peeling pass
             colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
@@ -79,9 +77,12 @@ public class CustomRender : MonoBehaviour
 
             colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            RenderBuffer[] renderTargets = new RenderBuffer[3]; // rgb, uv, mask and depth
+            RenderBuffer[] renderTargets = new RenderBuffer[3]; // rgb, uv+mask and depth
 
-            cam.backgroundColor = new Color(1, 1, 1, 1); 
+            cam.backgroundColor = new Color(1, 1, 1, 1);
+            clearTexture(depthBuffer); 
+            clearTexture(depthPeelBuffers[0]);
+            clearTexture(depthPeelBuffers[1]);
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
             {
@@ -137,10 +138,10 @@ public class CustomRender : MonoBehaviour
 
         switch (RenderOptions.getInstance().textureOutputMode)
         {
+            case RenderOptions.TextureOutputMode.PNG:
+                writeTexturesToPng(rgb, uvs, frameID);
+                break;
             //broke this when adding mask to b channel of uv tex
-            //case RenderOptions.TextureOutputMode.PNG:
-            //    writeTexturesToPng(rgb, uvs, frameID); 
-            //    break;
             //case RenderOptions.TextureOutputMode.Binary:
             //    writeTexturesToBinary(rgb, uvs, frameID); 
             //    break;
@@ -177,23 +178,13 @@ public class CustomRender : MonoBehaviour
 
     }
 
-    private void writeTexturesToPng(RenderTexture rgb, RenderTexture[] uvs, RenderTexture[] masks, int frameID)
+    private void writeTexturesToPng(RenderTexture rgb, RenderTexture[] uvs, int frameID)
     {
         writeTextureToPng(rgb, "rgb", frameID); 
         for(int i = 0; i< uvs.Length; ++i )
         {
             writeTextureToPng(uvs[i], "uv_" + i, frameID); 
         }
-        for (int i = 0; i < masks.Length; ++i)
-        {
-            writeTextureToPng(masks[i], "mask_" + i, frameID);
-        }
-
-        if (masks.Length != uvs.Length)
-        {
-            Debug.LogWarning("len(UVs) != len(masks) -- should provide per pixel per layer segmentation in multi-object scenes"); 
-        }
-
     }
 
 
@@ -206,6 +197,14 @@ public class CustomRender : MonoBehaviour
         File.WriteAllBytes(filename, blob);
         if (RenderOptions.getInstance().logOutputVerbose)
             Debug.Log("Wrote: " + filename);
+    }
+
+    private void clearTexture(RenderTexture rt)
+    {
+        RenderTexture old = RenderTexture.active;
+        RenderTexture.active = rt;
+        GL.Clear(true, true, new Color(0,0,0, 1), float.MaxValue);
+        RenderTexture.active = old;
     }
 
     private Texture2D getTextureFormRenderTexture(RenderTexture rt)
