@@ -46,7 +46,7 @@ public class RenderOptions : MonoBehaviour
         }
         if (outputDir == "")
         {
-            outputDir = Application.dataPath + "/../../Data/" + experiment_name + "/" + (isTrainSet?"train/":"test/");
+            outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet?"train/":"test/");
         }
         parseOptionsFromFile();
 

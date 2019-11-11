@@ -42,7 +42,7 @@ public class SampleImages : MonoBehaviour
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
-        if (exitOnFinish && frameCounter >= RenderOptions.getInstance().numFrames)
+        if (exitOnFinish && frameCounter > RenderOptions.getInstance().numFrames)
         {
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so

@@ -289,7 +289,8 @@ class NeuralRendererModel(BaseModel):
         self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         #self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
-        self.loss_names = ['G_L1']
+        self.loss_names = ['G_L1', 'dummy']
+        self.loss_dummy = 0
 
         self.visual_names = []
         self.nObjects = opt.nObjects

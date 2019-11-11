@@ -31,9 +31,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
 
 
-        parser.add_argument('--num_depth_layers', type=int, default=8, help='number of layers contained in uv and mask files')
-        parser.add_argument('--nObjects', type=int, default=1, help='total number of objects in scene')
-
+    
 
         self.isTrain = True
         return parser

@@ -50,6 +50,9 @@ class BaseOptions():
         parser.add_argument('--tex_features', type=int, default=16, help='# neural texture features')
         parser.add_argument('--rendererType', type=str, default='UNET_5_level', help='neural renderer network')
         parser.add_argument('--lossType', type=str, default='L1', help='loss type for the final output')
+        
+        parser.add_argument('--num_depth_layers', type=int, default=8, help='number of layers contained in uv and mask files')
+        parser.add_argument('--nObjects', type=int, default=1, help='total number of objects in scene')
 
         parser.add_argument('--hierarchicalTex', action='store_true', help='if specified, hierachical neural textures are used')
 

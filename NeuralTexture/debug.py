@@ -14,21 +14,10 @@ if __name__ == '__main__':
     opt = TrainOptions().parse()
 
 
-    opt.name = "NeuralRenderer"
     # opt.model = "debug"
     # opt.name = "debug"
 
-    opt.rendererType = 'UNET_5_level'
-    opt.resize_or_crop = 'resize_and_crop'
-    opt.ngf = 64
-
-    opt.num_depth_layers = 1
-    opt.batch_size = 1
-
     opt.verbose = True
-    opt.print_freq = 1
-    opt.display_freq = 5
-    opt.update_html_freq = 5
 
 
     data_loader = CreateDataLoader(opt)
@@ -106,7 +95,7 @@ if __name__ == '__main__':
                 t = (time.time() - iter_start_time) / opt.batch_size
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
                 if opt.display_id > 0:
-                   visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
+                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
                 
     #         if total_steps % opt.save_latest_freq == 0:
     #             print('saving the latest model (epoch %d, total_steps %d)' % (epoch, total_steps))
