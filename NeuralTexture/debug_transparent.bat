@@ -2,7 +2,8 @@
 
 set DATASETS_DIR=C:\Users\Patrick\Desktop\NeuralTexture\TransparentNeuralRendering\Data
 rem objects
-set DATA=sphere_mv_bg
+set DATA=spheres_mv_250
+rem number of objects in scene + 1 (background)
 set NUM_OBJECTS=4
 
 
@@ -18,7 +19,7 @@ rem #MODEL=pix2pix
 
 rem optimizer parameters
 set LR=0.005
-set BATCH_SIZE=4
+set BATCH_SIZE=8
 
 rem GPU
 set GPU_ID=0

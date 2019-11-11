@@ -13,11 +13,16 @@ public class SampleImages : MonoBehaviour
     public float minAngleX = -90;
     public float maxAngleX = 90;
 
+    public bool saveImages = true;
+    public bool exitOnFinish = true; 
+
     public GameObject camPrefab;
     public Transform lookAtTarget;
 
     private GameObject cam; 
     private CustomRender render;
+
+    public GameObject debugSphere; 
 
     private int frameCounter = 0; 
 
@@ -37,7 +42,7 @@ public class SampleImages : MonoBehaviour
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
-        if (frameCounter >= RenderOptions.getInstance().numFrames)
+        if (exitOnFinish && frameCounter >= RenderOptions.getInstance().numFrames)
         {
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
@@ -61,8 +66,8 @@ public class SampleImages : MonoBehaviour
         {
             cam.transform.LookAt(lookAtTarget); 
         }
-
-        render.RenderImage(true); 
+        GameObject g = Instantiate(debugSphere, cam.transform.position, cam.transform.rotation); 
+        render.RenderImage(saveImages); 
 
         ++frameCounter; 
     }
