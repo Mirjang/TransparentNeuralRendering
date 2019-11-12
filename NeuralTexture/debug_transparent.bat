@@ -11,20 +11,23 @@ rem renderer
 set RENDERER=MultiTarget-neuralRenderer_200
 
 rem models
-set MODEL=neuralRenderer
-set TEX_DIM=512
-set TEX_FEATURES=8
+rem set MODEL=neuralRenderer
+set MODEL=debug
+
+set TEX_DIM=256
+set TEX_FEATURES=3
 set NUM_DEPTH_LAYERS=6
+
+
 
 rem #MODEL=pix2pix
 
 rem optimizer parameters
-set LR=0.005
+set LR=0.001
 set BATCH_SIZE=1
 
 rem GPU
 set GPU_ID=0
-
 
 rem display params
 set DISP_FREQ=25

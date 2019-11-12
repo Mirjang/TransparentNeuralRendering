@@ -154,14 +154,15 @@ class UnetRenderer(nn.Module):
     def forward(self, feature_map):
         return self.model(feature_map)
 
+
 def define_Renderer(renderer, n_feature,ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
     net = None
     norm_layer = networks.get_norm_layer(norm_type=norm)
     N_OUT = 3
     #net = UnetRenderer(N_FEATURE, N_OUT, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+
     net = UnetRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     return networks.init_net(net, init_type, init_gain, gpu_ids)
-
 
 class Texture(nn.Module):
     def __init__(self, n_textures, n_features, dimensions, device):
@@ -298,7 +299,7 @@ class NeuralRendererModel(BaseModel):
             self.visual_names.append(str("texture"+str(i)+"_col"))
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        self.visual_names += ['sampled_texture_col','target']
+        self.visual_names += ['sampled_texture_col', 'fake' ,'target']
 
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks

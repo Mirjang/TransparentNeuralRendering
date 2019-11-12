@@ -131,7 +131,8 @@ class DebugModel(BaseModel):
 
         self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
-        self.loss_names = ['L1']
+        self.loss_names = ['L1', 'dummy']
+        self.loss_dummy = 0
 
         self.visual_names = []
         self.nObjects = opt.nObjects
@@ -139,7 +140,7 @@ class DebugModel(BaseModel):
             self.visual_names.append(str("texture"+str(i)+"_col"))
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        self.visual_names += ['sampled_texture_col','target']
+        self.visual_names += ['sampled_texture_col', 'output','target']
 
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
@@ -149,7 +150,7 @@ class DebugModel(BaseModel):
             self.model_names = ['texture']
 
         # texture
-        
+        self.tex_features = opt.tex_features
         self.texture = define_Texture(self.nObjects, opt.tex_features, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
        
         if self.isTrain:
@@ -198,12 +199,20 @@ class DebugModel(BaseModel):
         # self.texture1_col = self.texture.data[1:2,0:3,:,:]
         # self.texture2_col = self.texture.data[2:3,0:3,:,:]
 
+        # simple blending, assumes tex_dims = 3
+        alpha = .5
+        F = self.tex_features
+        output = self.sampled_texture[:, -F:,...]
+        for d in reversed(range(self.n_layers-1)): 
+            output = (1-alpha)* output  + alpha * self.sampled_texture[:, F*d:F*(d+1), ...] 
+        self.output = output[:, 0:3, ...]
+
     def optimize_parameters(self, epoch_iter):
         self.forward()
 
         self.optimizer_T.zero_grad()
         ## loss = L1(texture - target) 
-        self.loss_L1 = self.criterionL1(self.sampled_texture_col, self.target)
+        self.loss_L1 = self.criterionL1(self.output, self.target)
         #self.loss_L1 = self.criterionL1(self.texture0_col, self.target)
 
         self.loss_L1.backward()
