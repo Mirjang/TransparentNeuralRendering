@@ -22,6 +22,7 @@ public class SampleImages : MonoBehaviour
     private GameObject cam; 
     private CustomRender render;
 
+    public bool useDebugSphere = true; 
     public GameObject debugSphere; 
 
     private int frameCounter = 0; 
@@ -42,7 +43,7 @@ public class SampleImages : MonoBehaviour
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
-        if (exitOnFinish && frameCounter > RenderOptions.getInstance().numFrames)
+        if (exitOnFinish && frameCounter >= RenderOptions.getInstance().numFrames -1)
         {
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
@@ -66,7 +67,10 @@ public class SampleImages : MonoBehaviour
         {
             cam.transform.LookAt(lookAtTarget); 
         }
-        GameObject g = Instantiate(debugSphere, cam.transform.position, cam.transform.rotation); 
+        if(useDebugSphere)
+        {
+            GameObject g = Instantiate(debugSphere, cam.transform.position, cam.transform.rotation);
+        }
         render.RenderImage(saveImages); 
 
         ++frameCounter; 
