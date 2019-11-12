@@ -2,21 +2,23 @@
 
 set DATASETS_DIR=C:\Users\Patrick\Desktop\NeuralTexture\TransparentNeuralRendering\Datasets
 rem objects
-set DATA=spheres_250v
+rem set DATA=spheres_250v
+set DATA=nightstand_glasses_trashcan
+
 rem number of objects in scene + 1 (background)
-set NUM_OBJECTS=4
+set NUM_OBJECTS=7
 
 
 rem renderer
 set RENDERER=MultiTarget-neuralRenderer_200
 
 rem models
-rem set MODEL=neuralRenderer
-set MODEL=debug
+set MODEL=neuralRenderer
+rem set MODEL=debug
 
 set TEX_DIM=256
 set TEX_FEATURES=3
-set NUM_DEPTH_LAYERS=6
+set NUM_DEPTH_LAYERS=8
 
 
 
