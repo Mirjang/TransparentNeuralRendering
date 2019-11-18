@@ -17,7 +17,7 @@ set MODEL=neuralRenderer
 rem set MODEL=debug
 
 set TEX_DIM=256
-set TEX_FEATURES=3
+set TEX_FEATURES=16
 set NUM_DEPTH_LAYERS=8
 
 

@@ -100,7 +100,7 @@ public class RenderOptions : MonoBehaviour
         int id = 1; 
         foreach (var visibleObject in FindObjectsOfType<Renderer>())
         {
-            if(visibleObject.gameObject.activeSelf)
+            if (visibleObject.gameObject.activeSelf && visibleObject.gameObject.layer <4) // layer >=4 -> ui elements/indicator spheres
             {
                 MaterialPropertyBlock prop = new MaterialPropertyBlock();
                 if (visibleObject.HasPropertyBlock())
