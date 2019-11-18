@@ -15,6 +15,7 @@ set RENDERER=MultiTarget-neuralRenderer_200
 rem models
 set MODEL=neuralRenderer
 rem set MODEL=debug
+set NAME=neuralRenderer
 
 set TEX_DIM=256
 set TEX_FEATURES=16
@@ -33,6 +34,7 @@ set GPU_ID=0
 
 rem display params
 set DISP_FREQ=50
+set LOSS=L1
 
-
-python debug.py --niter 500 --save_epoch_freq 5 --batch_size %BATCH_SIZE%  --nObjects %NUM_OBJECTS% --tex_dim %TEX_DIM% --tex_features %TEX_FEATURES% --dataroot %DATASETS_DIR%/%DATA% --name %MODEL% --num_depth_layers %NUM_DEPTH_LAYERS% --renderer %RENDERER% --model %MODEL% --netG unet_256 --lambda_L1 100 --dataset_mode transparent --no_lsgan --norm batch --pool_size 0 --gpu_ids %GPU_ID% --lr %LR% --display_freq %DISP_FREQ% --update_html_freq %DISP_FREQ% --print_freq %DISP_FREQ%
+set EPOCH=latest
+python test.py --nObjects %NUM_OBJECTS% --num_depth_layers %NUM_DEPTH_LAYERS% --name %NAME% --epoch %EPOCH% --display_winsize 512 --nObjects %NUM_OBJECTS% --tex_dim %TEX_DIM% --tex_features %TEX_FEATURES% --dataroot %DATASETS_DIR%/%DATA%  --lossType %LOSS% --model %MODEL% --netG unet_256 --dataset_mode transparent --norm batch  --gpu_ids %GPU_ID%

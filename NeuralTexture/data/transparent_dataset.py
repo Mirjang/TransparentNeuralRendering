@@ -169,7 +169,7 @@ class TransparentDataset(BaseDataset):
         #################################
 
         return {'TARGET': TARGET, 'UV': UV, 'MASK' : MASK,
-                'paths': AB_path,}
+                'paths': rgb_path,}
 
     def __len__(self):
         return len(self.AB_paths)

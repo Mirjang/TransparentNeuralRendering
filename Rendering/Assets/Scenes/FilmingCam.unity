@@ -1035,7 +1035,7 @@ MonoBehaviour:
   numFrames: 500
   startFrame: 2
   numDepthPeelLayers: 8
-  experiment_name: nightstand_glasses_trashcan
+  experiment_name: crazy
   outputDir: 
   isTrainSet: 0
   logOutputVerbose: 0

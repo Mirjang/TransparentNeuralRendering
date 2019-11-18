@@ -1,7 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement; 
+using UnityEngine.SceneManagement;
+using System.IO;
 
 //Singleton storing all the options 
 public class RenderOptions : MonoBehaviour
@@ -97,21 +98,39 @@ public class RenderOptions : MonoBehaviour
 
     private void assignIDtoObjects()
     {
-        int id = 1; 
+
+        Dictionary<string, Renderer> dict = new Dictionary<string, Renderer>(); 
+
         foreach (var visibleObject in FindObjectsOfType<Renderer>())
         {
             if (visibleObject.gameObject.activeSelf && visibleObject.gameObject.layer <4) // layer >=4 -> ui elements/indicator spheres
             {
-                MaterialPropertyBlock prop = new MaterialPropertyBlock();
-                if (visibleObject.HasPropertyBlock())
-                    visibleObject.GetPropertyBlock(prop); 
-                prop.SetInt("_ObjectID", id);
-                visibleObject.SetPropertyBlock(prop); 
-                ++id; 
+                dict.Add(visibleObject.gameObject.name, visibleObject); 
             }
         }
+
+
+        List<string> names = new List<string>(dict.Keys);
+        names.Sort();
+        int id = 1;
+
+        foreach (var name in names)
+        {
+            var visibleObject = dict[name];
+            MaterialPropertyBlock prop = new MaterialPropertyBlock();
+            if (visibleObject.HasPropertyBlock())
+                visibleObject.GetPropertyBlock(prop);
+            prop.SetInt("_ObjectID", id);
+            visibleObject.SetPropertyBlock(prop);
+            ++id;
+        }
+
         numVisibleObjects = id - 1;
-        Shader.SetGlobalInt("_MaxVisObjects", numVisibleObjects); 
+        Shader.SetGlobalInt("_MaxVisObjects", numVisibleObjects);
+
+        names.Insert(0, "none"); 
+        System.IO.File.WriteAllLines(outputDir + "ObjectNames.txt", names); 
+
     }
 
     public int getNumVisibleObjects()
