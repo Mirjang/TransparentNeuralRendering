@@ -45,8 +45,16 @@ public class ManualCamera : MonoBehaviour
         {
             transform.position += transform.right * moveSpeed * fastMode * Time.deltaTime;
         }
+        if (Input.GetKey(KeyCode.R))
+        {
+            transform.position += transform.up * moveSpeed * fastMode * Time.deltaTime;
+        }
+        if (Input.GetKey(KeyCode.F))
+        {
+            transform.position -= transform.up * moveSpeed * fastMode * Time.deltaTime;
+        }
 
-        if(Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
             recordingCamera.RenderImage(); 
         }

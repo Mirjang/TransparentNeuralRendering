@@ -49,6 +49,10 @@ public class RenderOptions : MonoBehaviour
         {
             outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet?"train/":"test/");
         }
+        else
+        {
+            outputDir = outputDir + "/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/"); 
+        }
         parseOptionsFromFile();
 
         if(!SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RInt))
@@ -129,7 +133,7 @@ public class RenderOptions : MonoBehaviour
         Shader.SetGlobalInt("_MaxVisObjects", numVisibleObjects);
 
         names.Insert(0, "none"); 
-        System.IO.File.WriteAllLines(outputDir + "ObjectNames.txt", names); 
+        System.IO.File.WriteAllLines(outputDir + "object_names.txt", names); 
 
     }
 

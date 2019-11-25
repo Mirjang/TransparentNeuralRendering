@@ -13,6 +13,8 @@ public class SampleImages : MonoBehaviour
     public float minAngleX = -90;
     public float maxAngleX = 90;
 
+    public Vector3 centerRadius = Vector3.one; 
+
     public bool saveImages = true;
     public bool exitOnFinish = true; 
 
@@ -43,15 +45,19 @@ public class SampleImages : MonoBehaviour
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
-        if (exitOnFinish && frameCounter >= RenderOptions.getInstance().numFrames -1)
+        if (frameCounter >= RenderOptions.getInstance().numFrames)
         {
+            if(exitOnFinish)
+            {
 #if UNITY_EDITOR
-            // Application.Quit() does not work in the editor so
-            // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
-            UnityEditor.EditorApplication.isPlaying = false;
+                // Application.Quit() does not work in the editor so
+                // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
+                UnityEditor.EditorApplication.isPlaying = false;
 #else
          Application.Quit();
 #endif
+            }
+            return; 
         }
 
 
@@ -65,7 +71,9 @@ public class SampleImages : MonoBehaviour
 
         if(lookAtTarget)
         {
-            cam.transform.LookAt(lookAtTarget); 
+            var p = lookAtTarget.position + Vector3.Scale(Random.insideUnitSphere, centerRadius); 
+
+            cam.transform.LookAt(p); 
         }
         if(useDebugSphere)
         {

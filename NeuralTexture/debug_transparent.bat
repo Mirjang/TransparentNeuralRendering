@@ -32,7 +32,7 @@ rem GPU
 set GPU_ID=0
 
 rem display params
-set DISP_FREQ=50
+set DISP_FREQ=100
 
 
-python debug.py --niter 500 --save_epoch_freq 5 --batch_size %BATCH_SIZE%  --nObjects %NUM_OBJECTS% --tex_dim %TEX_DIM% --tex_features %TEX_FEATURES% --dataroot %DATASETS_DIR%/%DATA% --name %MODEL% --num_depth_layers %NUM_DEPTH_LAYERS% --renderer %RENDERER% --model %MODEL% --netG unet_256 --lambda_L1 100 --dataset_mode transparent --no_lsgan --norm batch --pool_size 0 --gpu_ids %GPU_ID% --lr %LR% --display_freq %DISP_FREQ% --update_html_freq %DISP_FREQ% --print_freq %DISP_FREQ%
+python debug.py --niter 500 --save_epoch_freq 10 --batch_size %BATCH_SIZE%  --nObjects %NUM_OBJECTS% --tex_dim %TEX_DIM% --tex_features %TEX_FEATURES% --dataroot %DATASETS_DIR%/%DATA% --name %MODEL% --num_depth_layers %NUM_DEPTH_LAYERS% --renderer %RENDERER% --model %MODEL% --netG unet_256 --lambda_L1 100 --dataset_mode transparent --no_lsgan --norm batch --pool_size 0 --gpu_ids %GPU_ID% --lr %LR% --display_freq %DISP_FREQ% --update_html_freq %DISP_FREQ% --print_freq %DISP_FREQ%
