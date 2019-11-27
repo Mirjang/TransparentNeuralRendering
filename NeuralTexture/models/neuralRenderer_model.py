@@ -155,13 +155,62 @@ class UnetRenderer(nn.Module):
         return self.model(feature_map)
 
 
-def define_Renderer(renderer, n_feature,ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
+class ResidualBlock(nn.Module): 
+    def __init__(self, input_nc, inner_nc, output_nc, kernel_size = 1, norm_layer=nn.BatchNorm2d, use_norm=True, is_first=False, is_last=False):
+        super(ResidualBlock, self).__init__()
+        self.is_outer = is_first or is_last
+        model = []
+        model += [nn.Conv2d(input_nc, inner_nc, kernel_size=kernel_size)]
+        model += [nn.ReLU()]
+        model += [nn.Conv2d(inner_nc, output_nc, kernel_size=kernel_size)]
+        if use_norm:
+            model += [norm_layer(output_nc)]
+
+        self.model = nn.Sequential(*model)
+        self.activation = nn.Tanh() if is_last else nn.ReLU() 
+
+    def forward(self, x):
+        if self.is_outer:
+            return self.activation(self.model(x))
+        else: 
+            return self.activation(x + self.model(x))
+
+class PerPixelRenderer(nn.Module): 
+    def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d):
+        super(PerPixelRenderer, self).__init__()
+
+        if renderer=='PerPixel_4':
+            n_blocks = 4
+        elif renderer=='PerPixel_8':
+            n_blocks = 8
+        elif renderer=='PerPixel_16':
+            n_blocks = 16
+        elif renderer=='PerPixel_32':
+            n_blocks = 32
+        
+        model = []
+        model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, use_norm=True, is_first=True)]
+
+        for i in range(n_blocks-2): 
+            model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer, use_norm=True)]
+        model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, use_norm=True, is_last=True)]
+
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x): 
+        return self.model(x) 
+
+def define_Renderer(renderer, n_feature, ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
     net = None
     norm_layer = networks.get_norm_layer(norm_type=norm)
     N_OUT = 3
     #net = UnetRenderer(N_FEATURE, N_OUT, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
 
-    net = UnetRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    if(renderer.startswith("UNET")):
+        net = UnetRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif(renderer.startswith("PerPixel")):
+        net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
+
     return networks.init_net(net, init_type, init_gain, gpu_ids)
 
 class Texture(nn.Module):
@@ -190,7 +239,6 @@ class Texture(nn.Module):
                 #background is 0 in mask and has no texture atm
                 mask = mask_layer == texture_id
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
-
                 layer_tex = layer_tex + sample * mask.float()
 
             layers.append(layer_tex)
@@ -301,7 +349,6 @@ class NeuralRendererModel(BaseModel):
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
         self.visual_names += ['sampled_texture_col', 'fake' ,'target']
 
-
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:
             self.model_names = ['netG', 'texture']
@@ -310,7 +357,11 @@ class NeuralRendererModel(BaseModel):
 
 
         # load/define networks
-        self.netG = define_Renderer(opt.rendererType, opt.tex_features * opt.num_depth_layers, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        input_channels = opt.tex_features * opt.num_depth_layers
+        if(opt.use_extrinsics):
+            input_channels += 6
+
+        self.netG = define_Renderer(opt.rendererType, input_channels, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
 
         # texture
@@ -354,6 +405,7 @@ class NeuralRendererModel(BaseModel):
         self.input_uv = input['UV'].to(self.device)
         self.input_mask = input['MASK'].to(self.device)
         self.image_paths = input['paths']
+        self.extrinsics = input['extrinsics']
 
 
     def sh_Layer(self, tex, extrinsics):
@@ -384,13 +436,18 @@ class NeuralRendererModel(BaseModel):
         #TODO get extrinsics for SH layer
         #self.features = self.sh_Layer(self.sampled_texture, self.extrinsics)
         self.features = self.sampled_texture
+
+        if(self.opt.use_extrinsics): 
+            _,_, H, W = self.input_mask.shape
+
+            extrinsics_layer = self.extrinsics.unsqueeze(2).unsqueeze(3).expand(-1,-1, H,W).to(self.device)
+            self.features = torch.cat([extrinsics_layer, self.features], 1)     
         # mask = self.input_mask == 0
         # self.mask = torch.cat([mask,mask,mask], 1)
         #self.background = torch.where(mask, self.target, torch.zeros_like(self.target))
         #self.features = torch.cat([self.features, self.background], 1)
 
         #self.background = mask
-
         self.fake = self.netG(self.features)
 
 
@@ -421,8 +478,8 @@ class NeuralRendererModel(BaseModel):
         fw = 1.0
         tw = 10.0 # -> scales lr
 
-        minIter = 15
-        maxIter = 30
+        minIter = 1
+        maxIter = 5
         
         alpha = (epoch - minIter) / (maxIter - minIter)
         if epoch < minIter:
@@ -435,8 +492,8 @@ class NeuralRendererModel(BaseModel):
             fw *= 1.0
             tw *= 0.0
 
-        fw += 0.1
-        tw += 0.25 # <<<
+        fw += 0.35 #in total we add 0.35? 
+       # tw += 0.25 # <<<
 
         return (fw, tw)
 

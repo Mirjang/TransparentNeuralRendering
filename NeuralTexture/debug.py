@@ -28,6 +28,9 @@ if __name__ == '__main__':
 
     print('#training images = %d' % dataset_size)
     print('#training objects = %d' % opt.nObjects)
+    # for i, data in enumerate(dataset):
+    #     print(data["extrinsics"])
+
 
     # for i, data in enumerate(dataset):
     #     if(i==0):

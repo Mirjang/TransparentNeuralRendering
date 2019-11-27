@@ -99,8 +99,8 @@ public class OfflineFilmingCamera : MonoBehaviour
             float t = Time.time; 
             if(lastFrameTime + 1.0f/frameRate < t)
             {
-                positions.Enqueue(recordingCamera.gameObject.transform.position);
-                rotations.Enqueue(recordingCamera.gameObject.transform.rotation);
+                positions.Enqueue(transform.position);
+                rotations.Enqueue(transform.rotation);
                 lastFrameTime = t; 
             }
         }
@@ -108,11 +108,13 @@ public class OfflineFilmingCamera : MonoBehaviour
 
         if(positions.Count > 0 && !recording) // just store one imaage per frame, so the programm doesnt freeze up completely
         {
+
             var pos = positions.Dequeue();
             var rot = rotations.Dequeue();
-            recordingCamera.transform.position = pos;
-            recordingCamera.transform.rotation = rot;
-            recordingCamera.RenderImage(writeImages); 
+            transform.position = pos;
+            transform.rotation = rot;
+            recordingCamera.RenderImage(writeImages);
+
         }
 
 

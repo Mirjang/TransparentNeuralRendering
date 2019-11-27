@@ -2,7 +2,7 @@ set -ex
 
 DATASETS_DIR=/home/mirjang/Desktop/NeuralTextures/TransparentNeuralRendering/Data
 # objects
-DATA=debug
+DATA=scene0
 NUM_OBJECTS=3 
 # renderer
 RENDERER=MultiTarget-neuralRenderer_200

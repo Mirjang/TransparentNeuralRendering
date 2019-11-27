@@ -56,6 +56,9 @@ class BaseOptions():
 
         parser.add_argument('--hierarchicalTex', action='store_true', help='if specified, hierachical neural textures are used')
 
+
+        parser.add_argument('--use_extrinsics', action='store_true', help='add camera extrinsics to NN input')
+
         parser.add_argument('--no_spherical_harmonics', action='store_true', help='if specified, no sh layers are used')
 
         self.initialized = True

@@ -34,12 +34,12 @@ def make_dataset(dir, opt):
     paths = [] 
 
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
-    i = 0  
-    while os.path.exists(os.path.join(dir, str(i) + "_rgb.exr")):
-        rgb = os.path.join(dir, str(i) + "_rgb.exr")
+    i = 0
+    while os.path.exists(os.path.join(dir, str(i) + "_rgb.png")):
+        rgb = os.path.join(dir, str(i) + "_rgb.png")
         uvs = [] 
-        for l in range(opt.num_depth_layers): 
-            uvs.append(os.path.join(dir, str(i) + "_uv_"+str(l)+".exr"))
+        for l in range(opt.num_depth_layers):
+            uvs.append(os.path.join(dir, str(i) + "_uv_"+str(l)+".png"))
         #too slow for large datasets
         #uvs = sorted(glob.glob(os.path.join(dir, str(i) + "_uv_*.exr")))
         paths.append((rgb, sorted(uvs)))
@@ -47,22 +47,7 @@ def make_dataset(dir, opt):
 
     return paths
 
-def loadRGBAFloatEXR(path, channel_names = ['R', 'G', 'B']): 
-    assert(OpenEXR.isOpenExrFile(path))
-
-    exr_file = OpenEXR.InputFile(path)
-    nparr = channels_to_ndarray(exr_file, channel_names)
-    exr_file.close()
-    nparr = np.clip(nparr, 0.0, 1.0)
-    
-    #rgb = np.transpose(rgb, (1,2,0))
-    #rgb = rgb[:,:, :3]
-    #rgb = np.flip(rgb, 0)
-
-    return nparr
-
-
-class TransparentDataset(BaseDataset):
+class TransparentPNGDataset(BaseDataset):
     @staticmethod
     def modify_commandline_options(parser, is_train):
         return parser
@@ -89,20 +74,21 @@ class TransparentDataset(BaseDataset):
         assert(len(uv_paths) >= self.opt.num_depth_layers), "len(uv_paths) !>= num_depth_layers"
         # default image dimensions
 
-
         # load image data
         #assert(IMG_DIM == self.opt.fineSize)
-        rgb_array = loadRGBAFloatEXR(rgb_path, ['R', 'G', 'B'])
+        
+        rgb_array = Image.open(rgb_path)
 
         uv_arrays = []
         mask_arrays = [] 
 
         for i in range(self.opt.num_depth_layers):
-            mask_tmp = transforms.ToTensor()(loadRGBAFloatEXR(uv_paths[i] ,channel_names=['B'])).to(self.device)
+            uvm = transforms.ToTensor()(Image.open(uv_paths[i])).to(self.device)
+            mask_tmp = uvm[2:3]
+            uv = uvm[:2]
             mask_tmp = mask_tmp * 255
             mask_tmp[mask_tmp == 255] = 0
             mask_arrays.append(mask_tmp.round().int())
-            uv = transforms.ToTensor()(loadRGBAFloatEXR(uv_paths[i], channel_names=['R', 'G'])).to(self.device)
             uv_mask = torch.cat([mask_tmp, mask_tmp], 0)
             uv[uv_mask == 0] = 0 #rendering forces background to be 1, however here 0 is preferable
             uv_arrays.append(uv)
@@ -110,15 +96,22 @@ class TransparentDataset(BaseDataset):
         UV = torch.cat(uv_arrays, 0)
         MASK = torch.cat(mask_arrays, 0)
 
-        TARGET = transforms.ToTensor()(rgb_array.astype(np.float32))
+        TARGET = transforms.ToTensor()(rgb_array)
 
+        # print(UV.shape)
+        # print(MASK.shape)
+        # print(TARGET.shape)
+
+        # UV = transforms.ToTensor()(uvs.astype(np.float32))
+        # MASK = transforms.ToTensor()(masks.astype(np.int32))
 
         # for i in range(self.opt.num_depth_layers):
-        #     mask_tmp = loadRGBAFloatEXR(uv_paths[i],channel_names=['B'])
+        #     uvm = np.array(Image.open(uv_paths[i]))
+        #     mask_tmp = uvm[:,:, 2:3]
+        #     uv = uvm[:,:,:2]       
         #     mask_tmp = mask_tmp * 255
         #     mask_tmp[mask_tmp==255] = 0
         #     mask_arrays.append( np.rint(mask_tmp).astype(np.int32))
-        #     uv = loadRGBAFloatEXR(uv_paths[i], channel_names=['R','G'])
         #     uv_mask = np.concatenate([mask_tmp,mask_tmp], axis=2)
         #     uv[uv_mask==0] = 0 #rendering forces background to be 1, however here 0 is preferable
         #     uv_arrays.append( uv )
@@ -126,16 +119,15 @@ class TransparentDataset(BaseDataset):
         # uvs = np.concatenate(uv_arrays, axis=2)
         # masks = np.concatenate(mask_arrays, axis=2)
 
-        # TARGET = transforms.ToTensor()(rgb_array.astype(np.float32))
+        # TARGET = transforms.ToTensor()(rgb_array)
         # UV = transforms.ToTensor()(uvs.astype(np.float32))
         # MASK = transforms.ToTensor()(masks.astype(np.int32))
 
-
-
-
         TARGET = 2.0 * TARGET - 1.0
         UV = 2.0 * UV - 1.0
-
+        # print(UV.shape)
+        # print(MASK.shape)
+        # print(TARGET.shape)
 
         #################################
         ####### apply augmentation ######
@@ -181,4 +173,4 @@ class TransparentDataset(BaseDataset):
         return len(self.AB_paths)
 
     def name(self):
-        return 'TransparentDataset'
+        return 'TransparentPNGDataset'
