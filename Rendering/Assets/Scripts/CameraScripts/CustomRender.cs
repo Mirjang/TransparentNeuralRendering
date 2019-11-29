@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
-using UnityEngine.Rendering; 
+using UnityEngine.Rendering;
+using UnityEditor; 
 
 [RequireComponent(typeof(Camera))]
 public class CustomRender : MonoBehaviour
@@ -84,7 +85,10 @@ public class CustomRender : MonoBehaviour
         //}
         if (RenderOptions.getInstance().renderTransparent)
         {
-            
+            //disable unnecessary renderers and enable proxy renderer if present
+            DisableRenderers.disableAllRenderers(); 
+
+
             colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
@@ -119,7 +123,8 @@ public class CustomRender : MonoBehaviour
             if (write)
             {
                 outputTextures(rgb, uvBuffers);
-                var r = cam.transform.rotation.eulerAngles / 360; 
+                //var r = cam.transform.rotation.eulerAngles / 360;
+                var r = cam.transform.forward.normalized; 
                 string camPoseStr = cam.transform.position.x +" "+ cam.transform.position.y +" "+ cam.transform.position.z + " " + r.x + " "+ r.y + " "+ r.z + "\n";
                 File.AppendAllText(RenderOptions.getInstance().outputDir + "camera_pose.txt", camPoseStr); 
 

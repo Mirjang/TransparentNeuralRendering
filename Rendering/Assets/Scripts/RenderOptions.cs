@@ -103,11 +103,14 @@ public class RenderOptions : MonoBehaviour
     private void assignIDtoObjects()
     {
 
+        //disable unnecessary renderers and enable proxy renderer if present
+        DisableRenderers.disableAllRenderers();
+
         Dictionary<string, Renderer> dict = new Dictionary<string, Renderer>(); 
 
         foreach (var visibleObject in FindObjectsOfType<Renderer>())
         {
-            if (visibleObject.gameObject.activeSelf && visibleObject.gameObject.layer <4) // layer >=4 -> ui elements/indicator spheres
+            if (visibleObject.enabled && visibleObject.gameObject.activeSelf && visibleObject.gameObject.layer <4) // layer >=4 -> ui elements/indicator spheres
             {
                 dict.Add(visibleObject.gameObject.name, visibleObject); 
             }

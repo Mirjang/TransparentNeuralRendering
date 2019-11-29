@@ -478,7 +478,7 @@ class NeuralRendererModel(BaseModel):
         fw = 1.0
         tw = 10.0 # -> scales lr
 
-        minIter = 1
+        minIter = 2
         maxIter = 5
         
         alpha = (epoch - minIter) / (maxIter - minIter)
@@ -493,7 +493,8 @@ class NeuralRendererModel(BaseModel):
             tw *= 0.0
 
         fw += 0.35 #in total we add 0.35? 
-       # tw += 0.25 # <<<
+        #tw += 0.25 # <<<
+        fw += 0.25 # <<<
 
         return (fw, tw)
 
@@ -520,6 +521,8 @@ class NeuralRendererModel(BaseModel):
     def backward_G(self, epoch):
         # compute epoch weight
         (fake_weight, texture_weight) = self.computeEpochWeight(epoch)
+        # fake_weight = 1
+        # texture_weight = 1
 
         # First, G(A) should fake the discriminator
         # fake_AB = torch.cat((self.input_uv, self.fake), 1)
