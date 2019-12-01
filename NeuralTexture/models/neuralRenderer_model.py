@@ -175,11 +175,31 @@ class ResidualBlock(nn.Module):
         else: 
             return self.activation(x + self.model(x))
 
+
+class BlendRenderer(nn.Module): 
+    def __init__(self, renderer, input_nc, NOUT, n_layers): 
+        super(BlendRenderer, self).__init__()
+        assert(NOUT <= input_nc // n_layers)
+        self.nFeatures = input_nc // n_layers
+        self.nOUT = NOUT
+        self.n_layers = n_layers
+        self.dummy = nn.Conv2d(1,1,1) # so our optimizer has something to optimize
+
+
+    def forward(self, x): 
+        # simple blending, assumes tex_dims = 3
+        alpha = .5
+        output = x[:, -self.nFeatures:,...]
+        for d in reversed(range(self.n_layers-1)): 
+            output = (1-alpha)* output  + alpha * x[:, self.nFeatures*d:self.nFeatures*(d+1), ...] 
+        return output[:, 0:self.nOUT, ...]
+
 class PerPixelRenderer(nn.Module): 
     def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d):
         super(PerPixelRenderer, self).__init__()
-
-        if renderer=='PerPixel_4':
+        if renderer=='PerPixel_2':
+            n_blocks = 2
+        elif renderer=='PerPixel_4':
             n_blocks = 4
         elif renderer=='PerPixel_8':
             n_blocks = 8
@@ -198,9 +218,10 @@ class PerPixelRenderer(nn.Module):
         self.model = nn.Sequential(*model)
 
     def forward(self, x): 
-        return self.model(x) 
+        print(x.shape)
+        return self.model(x)
 
-def define_Renderer(renderer, n_feature, ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
+def define_Renderer(renderer, n_feature, ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[], n_depth_layers=1):
     net = None
     norm_layer = networks.get_norm_layer(norm_type=norm)
     N_OUT = 3
@@ -210,6 +231,8 @@ def define_Renderer(renderer, n_feature, ngf, norm='batch', use_dropout=False, i
         net = UnetRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif(renderer.startswith("PerPixel")):
         net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
+    elif(renderer.startswith("Blend")): 
+        net = BlendRenderer(renderer, n_feature, N_OUT, n_depth_layers)
 
     return networks.init_net(net, init_type, init_gain, gpu_ids)
 
@@ -343,8 +366,9 @@ class NeuralRendererModel(BaseModel):
 
         self.visual_names = []
         self.nObjects = opt.nObjects
-        for i in range(self.nObjects):
-            self.visual_names.append(str("texture"+str(i)+"_col"))
+        if(opt.isTrain):
+            for i in range(1,self.nObjects):
+                self.visual_names.append(str("texture"+str(i)+"_col"))
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
         self.visual_names += ['sampled_texture_col', 'fake' ,'target']
@@ -361,7 +385,7 @@ class NeuralRendererModel(BaseModel):
         if(opt.use_extrinsics):
             input_channels += 6
 
-        self.netG = define_Renderer(opt.rendererType, input_channels, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        self.netG = define_Renderer(opt.rendererType, input_channels, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids, opt.num_depth_layers)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
 
         # texture
@@ -427,7 +451,8 @@ class NeuralRendererModel(BaseModel):
         #first layer first 3 channels, rgb channels for nth layers will be [:, nFeatures*n:nFeatures*n+1, ...]
         self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]
 
-        for i in range(self.nObjects):
+        # texture0 = background (no uv map)
+        for i in range(1,self.nObjects):
             setattr(self,str("texture"+str(i)+"_col"), self.texture.data[i:i+1, 0:3, ...] )
         # self.texture0_col = self.texture.data[0:1,0:3,:,:]
         # self.texture1_col = self.texture.data[1:2,0:3,:,:]
@@ -478,8 +503,8 @@ class NeuralRendererModel(BaseModel):
         fw = 1.0
         tw = 10.0 # -> scales lr
 
-        minIter = 2
-        maxIter = 5
+        minIter = 1
+        maxIter = 3
         
         alpha = (epoch - minIter) / (maxIter - minIter)
         if epoch < minIter:
@@ -492,9 +517,9 @@ class NeuralRendererModel(BaseModel):
             fw *= 1.0
             tw *= 0.0
 
-        fw += 0.35 #in total we add 0.35? 
+        #fw += 0.35 #in total we add 0.35? 
         #tw += 0.25 # <<<
-        fw += 0.25 # <<<
+        #fw += 0.25 # <<<
 
         return (fw, tw)
 
@@ -521,7 +546,7 @@ class NeuralRendererModel(BaseModel):
     def backward_G(self, epoch):
         # compute epoch weight
         (fake_weight, texture_weight) = self.computeEpochWeight(epoch)
-        # fake_weight = 1
+        fake_weight = 1
         # texture_weight = 1
 
         # First, G(A) should fake the discriminator
@@ -540,7 +565,7 @@ class NeuralRendererModel(BaseModel):
         #     self.loss_G_L1 = fake_weight * self.criterionL2(self.fake, self.target) * self.opt.lambda_L1
 
         # col tex loss
-        self.loss_G_L1 += texture_weight * self.criterionL1(self.sampled_texture_col, self.target) * self.opt.lambda_L1
+        #self.loss_G_L1 += texture_weight * self.criterionL1(self.sampled_texture_col, self.target) * self.opt.lambda_L1
 
 
         # regularizer of texture
