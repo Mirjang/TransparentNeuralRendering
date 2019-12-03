@@ -153,16 +153,17 @@ MonoBehaviour:
   exrCompression: 2
   useCustomGlobalAlpha: 0
   globalAlpha: 0.5
-  numFrames: 1000
+  numFrames: 6000
   startFrame: 2
   numDepthPeelLayers: 8
-  experiment_name: 0
+  experiment_name: lab2
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
   renderUVOpaque: 0
   renderTransparent: 1
+  framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
   frameIdCounter: 0
@@ -392,7 +393,7 @@ MonoBehaviour:
   maxAngleX: 80
   centerRadius: {x: 3, y: 3, z: 3}
   saveImages: 1
-  exitOnFinish: 0
+  actionOnFinish: 2
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   lookAtTarget: {fileID: 1067380337}
@@ -589,6 +590,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1238269490373061115, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.75
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8bd499bd9fb8af4eb4f29091e644227, type: 3}

@@ -31,7 +31,7 @@ public class RenderOptions : MonoBehaviour
     public bool renderUVOpaque = false;
     public bool renderTransparent = true;
 
-
+    public int framesSinceStart = 0; 
     public Material default_t;
 
     private int numVisibleObjects; 
@@ -47,7 +47,12 @@ public class RenderOptions : MonoBehaviour
         }
         if (outputDir == "")
         {
-            outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet?"train/":"test/");
+            if(Application.platform == RuntimePlatform.LinuxPlayer)
+            {
+                outputDir = Application.dataPath + "/mnt/raid/patrickradner/datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
+            }
+            else
+                outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet?"train/":"test/");
         }
         else
         {
@@ -64,7 +69,7 @@ public class RenderOptions : MonoBehaviour
             Debug.LogError("System cannot support 4 simultaneous render targets!"); 
         }
 
-
+        Debug.Log(SceneManager.GetActiveScene().name); 
         Debug.Log("Output Dir: " + outputDir);
         if (System.IO.Directory.Exists(outputDir))
         {
@@ -80,7 +85,7 @@ public class RenderOptions : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        ++framesSinceStart; 
     }
 
     public int getIncrementalCameraId()
@@ -98,7 +103,6 @@ public class RenderOptions : MonoBehaviour
     {
 
     }
-
 
     private void assignIDtoObjects()
     {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement; 
 
 public class SampleImages : MonoBehaviour
 {
@@ -16,8 +17,9 @@ public class SampleImages : MonoBehaviour
     public Vector3 centerRadius = Vector3.one; 
 
     public bool saveImages = true;
-    public bool exitOnFinish = true; 
+    public enum ActionOnFinish { None, Exit, LoadScene };
 
+    public ActionOnFinish actionOnFinish = ActionOnFinish.Exit;
     public GameObject camPrefab;
     public Transform lookAtTarget;
 
@@ -40,14 +42,14 @@ public class SampleImages : MonoBehaviour
     void Update()
     {
         //wait some frames to init
-        if (Time.frameCount < RenderOptions.getInstance().startFrame)
+        if (RenderOptions.getInstance().framesSinceStart < RenderOptions.getInstance().startFrame)
         {
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
         if (frameCounter >= RenderOptions.getInstance().numFrames)
         {
-            if(exitOnFinish)
+            if (actionOnFinish == ActionOnFinish.Exit)
             {
 #if UNITY_EDITOR
                 // Application.Quit() does not work in the editor so
@@ -57,7 +59,26 @@ public class SampleImages : MonoBehaviour
          Application.Quit();
 #endif
             }
-            return; 
+
+            if (actionOnFinish == ActionOnFinish.LoadScene)
+            {
+                if (SceneManager.GetActiveScene().buildIndex + 1 < SceneManager.sceneCountInBuildSettings)
+                {
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+                }
+                else
+                {
+#if UNITY_EDITOR
+                    // Application.Quit() does not work in the editor so
+                    // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
+                    UnityEditor.EditorApplication.isPlaying = false;
+#else
+         Application.Quit();
+#endif
+                }
+            }
+
+            return;
         }
 
 
