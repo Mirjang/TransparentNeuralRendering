@@ -16,8 +16,8 @@ set GPU_ID="0"
 rem display params
 set DISP_FREQ=100
 
-
-call "./experiment_setups/PerPixel4_lab_2.bat"
+call "./experiment_setups/LstmPerPixel4_lab_2.bat"
+rem call "./experiment_setups/PerPixel4_lab_2.bat"
 rem call "./experiment_setups/UNET_5_lab_2.bat"
 rem call "./experiment_setups/Blend_lab_2.bat"
 rem call "./experiment_setups/Debug.bat"

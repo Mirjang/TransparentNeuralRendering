@@ -14,7 +14,7 @@ set NUM_OBJECTS=7
 
 
 rem network used for rendering 
-set RENDERER_TYPE=PerPixel_4
+set RENDERER_TYPE=LstmPerPixel_2
 
 rem models -- for simple blending use debug
 set MODEL=neuralRenderer
@@ -32,7 +32,8 @@ rem #experiment name
 set NAME=%MODEL%_%RENDERER_TYPE%_%DATA%_tex%TEX_DIM%x%TEX_FEATURES%x%NUM_OBJECTS%
 
 rem additional options 
-set OPTIONS=--use_extrinsics
+rem set OPTIONS=--use_extrinsics
+set OPTIONS=--use_extrinsics --ngf 32
 
 rem continue training an existing model
-rem set CONTINUE=--continue_train --epoch_count 11
+set CONTINUE=--continue_train --epoch_count 31

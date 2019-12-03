@@ -69,7 +69,7 @@ class UnetSkipConnectionBlock(nn.Module):
             input_nc = outer_nc
 
         #use_norm = False
-        use_norm = True
+        use_norm = not (norm_layer is None)
 
         downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4, stride=2, padding=1, bias=use_bias)
         downrelu = nn.LeakyReLU(0.2, True)
@@ -154,28 +154,6 @@ class UnetRenderer(nn.Module):
     def forward(self, feature_map):
         return self.model(feature_map)
 
-
-class ResidualBlock(nn.Module): 
-    def __init__(self, input_nc, inner_nc, output_nc, kernel_size = 1, norm_layer=nn.BatchNorm2d, use_norm=True, is_first=False, is_last=False):
-        super(ResidualBlock, self).__init__()
-        self.is_outer = is_first or is_last
-        model = []
-        model += [nn.Conv2d(input_nc, inner_nc, kernel_size=kernel_size)]
-        model += [nn.ReLU()]
-        model += [nn.Conv2d(inner_nc, output_nc, kernel_size=kernel_size)]
-        if use_norm:
-            model += [norm_layer(output_nc)]
-
-        self.model = nn.Sequential(*model)
-        self.activation = nn.Tanh() if is_last else nn.ReLU() 
-
-    def forward(self, x):
-        if self.is_outer:
-            return self.activation(self.model(x))
-        else: 
-            return self.activation(x + self.model(x))
-
-
 class BlendRenderer(nn.Module): 
     def __init__(self, renderer, input_nc, NOUT, n_layers): 
         super(BlendRenderer, self).__init__()
@@ -194,9 +172,32 @@ class BlendRenderer(nn.Module):
             output = (1-alpha)* output  + alpha * x[:, self.nFeatures*d:self.nFeatures*(d+1), ...] 
         return output[:, 0:self.nOUT, ...]
 
+class ResidualBlock(nn.Module): 
+    def __init__(self, input_nc, inner_nc, output_nc, kernel_size = 1, norm_layer=nn.BatchNorm2d, is_first=False, is_last=False):
+        super(ResidualBlock, self).__init__()
+        
+        self.is_outer = is_first or is_last
+        model = []
+        model += [nn.Conv2d(input_nc, inner_nc, kernel_size=kernel_size)]
+        model += [nn.ReLU()]
+        model += [nn.Conv2d(inner_nc, output_nc, kernel_size=kernel_size)]
+        if norm_layer:
+            model += [norm_layer(output_nc)]
+
+        self.model = nn.Sequential(*model)
+        self.activation = nn.Tanh() if is_last else nn.ReLU() 
+
+    def forward(self, x):
+        if self.is_outer:
+            return self.activation(self.model(x))
+        else: 
+            return self.activation(x + self.model(x))
+
+
 class PerPixelRenderer(nn.Module): 
     def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d):
         super(PerPixelRenderer, self).__init__()
+        
         if renderer=='PerPixel_2':
             n_blocks = 2
         elif renderer=='PerPixel_4':
@@ -208,20 +209,140 @@ class PerPixelRenderer(nn.Module):
         elif renderer=='PerPixel_32':
             n_blocks = 32
         
+        norm_layer=None
+
         model = []
-        model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, use_norm=True, is_first=True)]
+       # model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
+        model += [nn.Conv2d(input_nc, ngf, kernel_size=4, stride=2, padding=1, bias=True)]
 
-        for i in range(n_blocks-2): 
-            model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer, use_norm=True)]
-        model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, use_norm=True, is_last=True)]
+        for i in range(n_blocks): 
+            model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+       # model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
 
+        model += [nn.ConvTranspose2d(ngf, output_nc, kernel_size=4, stride=2, padding=1, bias=True)]
+        model += [nn.Tanh()]
         self.model = nn.Sequential(*model)
 
     def forward(self, x): 
-        print(x.shape)
         return self.model(x)
 
-def define_Renderer(renderer, n_feature, ngf, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[], n_depth_layers=1):
+class ConvLSTMCell(nn.Module):
+    
+    def __init__(self, input_size, input_dim, hidden_dim, kernel_size, bias):
+        """
+        Initialize ConvLSTM cell.
+        
+        Parameters
+        ----------
+        input_size: (int, int)
+            Height and width of input tensor as (height, width).
+        input_dim: int
+            Number of channels of input tensor.
+        hidden_dim: int
+            Number of channels of hidden state.
+        kernel_size: (int, int)
+            Size of the convolutional kernel.
+        bias: bool
+            Whether or not to add the bias.
+        """
+
+        super(ConvLSTMCell, self).__init__()
+
+        self.height, self.width = input_size
+        self.input_dim  = input_dim
+        self.hidden_dim = hidden_dim
+
+        self.kernel_size = kernel_size
+        self.padding     = kernel_size[0] // 2, kernel_size[1] // 2
+        self.bias        = bias
+        
+        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
+                              out_channels=4 * self.hidden_dim,
+                              kernel_size=self.kernel_size,
+                              padding=self.padding,
+                              bias=self.bias)
+
+    def forward(self, input_tensor, cur_state):
+        
+        h_cur, c_cur = cur_state
+        
+        combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
+        
+        combined_conv = self.conv(combined)
+        cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1) 
+        i = torch.sigmoid(cc_i)
+        f = torch.sigmoid(cc_f)
+        o = torch.sigmoid(cc_o)
+        g = torch.tanh(cc_g)
+
+        c_next = f * c_cur + i * g
+        h_next = o * torch.tanh(c_next)
+        
+        return h_next, c_next
+
+    def init_hidden(self, batch_size):
+        return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda(),
+                Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda())
+
+class LstmPerPixelRenderer(nn.Module): 
+    def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d):
+        super(LstmPerPixelRenderer, self).__init__()
+        self.n_layers = opt.num_depth_layers
+        self.n_extrinsics = 6 if opt.use_extrinsics else 0 
+        self.tex_channels = opt.tex_features
+        ngf = opt.ngf
+        
+        if renderer=='LstmPerPixel_2':
+            n_blocks = 2
+        elif renderer=='LstmPerPixel_4':
+            n_blocks = 4
+        elif renderer=='LstmPerPixel_8':
+            n_blocks = 8
+        elif renderer=='LstmPerPixel_16':
+            n_blocks = 16
+        elif renderer=='LstmPerPixel_32':
+            n_blocks = 32
+
+
+        encoder = []
+        encoder += [nn.Conv2d(self.n_extrinsics + opt.tex_features, ngf, kernel_size=4, stride=2, padding=1, bias=True)]
+        for i in range(n_blocks-1): 
+            encoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+
+        self.encoder = nn.Sequential(*encoder)
+
+        self.lstm = ConvLSTMCell((256, 256), ngf, ngf, (1, 1), True)
+        self.hidden_dims = (opt.batch_size, ngf, 256,256)
+        decoder = []
+        decoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+        decoder += [nn.ConvTranspose2d(ngf, output_nc, kernel_size=4, stride=2, padding=1, bias=True)]
+        decoder += [nn.Tanh()]
+        self.decoder = nn.Sequential(*decoder)
+
+
+    def forward(self, x):
+  
+        if(self.n_extrinsics>0): 
+            extrinsics = x[:, :self.n_extrinsics,...]
+        x.device
+        h = torch.zeros(self.hidden_dims).to(x.device)
+        c = torch.zeros(self.hidden_dims).to(x.device)
+
+        for i in reversed(range(self.n_layers)): 
+            l = self.n_extrinsics + i * self.tex_channels
+            u = l + self.tex_channels
+            x_i = x[:,l:u,...]
+            if(self.n_extrinsics>0): 
+                x_i = torch.cat([extrinsics, x_i], 1)
+
+            x_i = self.encoder(x_i)
+            h, c = self.lstm(x_i, (h,c))
+
+        return self.decoder(h)
+
+def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
+    ngf = opt.ngf
+    
     net = None
     norm_layer = networks.get_norm_layer(norm_type=norm)
     N_OUT = 3
@@ -231,9 +352,10 @@ def define_Renderer(renderer, n_feature, ngf, norm='batch', use_dropout=False, i
         net = UnetRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif(renderer.startswith("PerPixel")):
         net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
-    elif(renderer.startswith("Blend")): 
+    elif(renderer.startswith("Blend")):
         net = BlendRenderer(renderer, n_feature, N_OUT, n_depth_layers)
-
+    elif(renderer.startswith("Lstm")):
+        net = LstmPerPixelRenderer(renderer, N_OUT, opt)
     return networks.init_net(net, init_type, init_gain, gpu_ids)
 
 class Texture(nn.Module):
@@ -385,7 +507,7 @@ class NeuralRendererModel(BaseModel):
         if(opt.use_extrinsics):
             input_channels += 6
 
-        self.netG = define_Renderer(opt.rendererType, input_channels, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids, opt.num_depth_layers)
+        self.netG = define_Renderer(opt.rendererType, input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
 
         # texture
