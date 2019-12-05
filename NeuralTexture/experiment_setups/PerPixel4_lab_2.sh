@@ -31,7 +31,7 @@ LR=0.001
 # #experiment name
 NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJECTS}
 # additional options 
-OPTIONS=--use_extrinsics
+OPTIONS="--use_extrinsics"
 
 # continue training an existing model
-# CONTINUE=--continue_train --epoch_count 11
+# CONTINUE="--continue_train --epoch_count 11"

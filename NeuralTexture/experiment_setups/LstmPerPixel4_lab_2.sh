@@ -32,7 +32,7 @@ LR=0.001
 NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJECTS}
 # additional options 
 # OPTIONS=--use_extrinsics
-OPTIONS=--use_extrinsics --ngf 32
+OPTIONS="--use_extrinsics --ngf 32"
 
 # continue training an existing model
-CONTINUE=--continue_train --epoch_count 31
+#CONTINUE="--continue_train --epoch_count 31"

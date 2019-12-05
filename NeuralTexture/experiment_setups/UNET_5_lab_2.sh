@@ -28,4 +28,4 @@ NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJEC
 OPTIONS=--use_extrinsics
 
 # continue training an existing model
-CONTINUE=--continue_train --epoch_count 81
+#CONTINUE="--continue_train --epoch_count 81"
