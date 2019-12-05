@@ -170,7 +170,7 @@ class BlendRenderer(nn.Module):
         alphaP = x[:, -1:, ...]
         output = x[:, -self.nFeatures:,...]
         for d in reversed(range(self.n_layers-1)): 
-            alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*f+self.nOUT+1, ...] 
+            alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*d+self.nOUT+1, ...] 
             output = (1-alphaP)* output  + alpha * x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...] 
             alphaP = alpha
         return output[:, 0:self.nOUT, ...]
