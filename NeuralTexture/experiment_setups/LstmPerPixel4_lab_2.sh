@@ -2,7 +2,7 @@ set -ex
 
 # dataset
 # DATA=spheres_250v
-export DATA=lab_2
+export DATA=lab2
 
 # choose between EXR and PNG loader
 export DATASET_MODE=transparent
