@@ -27,6 +27,6 @@ TEX_FEATURES=8
 NUM_DEPTH_LAYERS=8
 
 # #experiment name
-NAME=$(MODEL)_$(RENDERER_TYPE)_$(DATA)_tex$(TEX_DIM)x$(TEX_FEATURES)x$(NUM_OBJECTS)
+NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJECTS}
 # continue training an existing model (epoch_count to latest save +1)
 # CONDINUE="--continue_train --epoch_count 11"

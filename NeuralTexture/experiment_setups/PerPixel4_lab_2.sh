@@ -29,7 +29,7 @@ LR=0.001
 
 
 # #experiment name
-NAME=$(MODEL)_$(RENDERER_TYPE)_$(DATA)_tex$(TEX_DIM)x$(TEX_FEATURES)x$(NUM_OBJECTS)
+NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJECTS}
 # additional options 
 OPTIONS=--use_extrinsics
 
