@@ -168,7 +168,8 @@ class BlendRenderer(nn.Module):
         # simple blending, assumes tex_dims = 4
         
         alphaP = x[:, -1:, ...]
-        output = x[:, -self.nFeatures:,...]
+        last = (self.n_layers-1)*self.nFeatures
+        output = x[:, last:last+self.nOUT,...]
         for d in reversed(range(self.n_layers-1)): 
             alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*d+self.nOUT+1, ...] 
             output = (1-alphaP)* output  + alpha * x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...] 
@@ -181,9 +182,9 @@ class ResidualBlock(nn.Module):
         
         self.is_outer = is_first or is_last
         model = []
-        model += [nn.Conv2d(input_nc, inner_nc, kernel_size=kernel_size)]
+        model += [nn.Conv2d(input_nc, inner_nc, kernel_size=kernel_size, bias=True)]
         model += [nn.ReLU()]
-        model += [nn.Conv2d(inner_nc, output_nc, kernel_size=kernel_size)]
+        model += [nn.Conv2d(inner_nc, output_nc, kernel_size=kernel_size, bias=True)]
         if norm_layer:
             model += [norm_layer(output_nc)]
 
@@ -215,14 +216,15 @@ class PerPixelRenderer(nn.Module):
         norm_layer=None
 
         model = []
-       # model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
-        model += [nn.Conv2d(input_nc, ngf, kernel_size=4, stride=2, padding=1, bias=True)]
+        #model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
+        model += [nn.Conv2d(input_nc, ngf, kernel_size=1, stride=1 , bias=True)]
 
         for i in range(n_blocks): 
             model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
-       # model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
 
-        model += [nn.ConvTranspose2d(ngf, output_nc, kernel_size=4, stride=2, padding=1, bias=True)]
+        #model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, is_last=True)]
+
+        model += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
         model += [nn.Tanh()]
         self.model = nn.Sequential(*model)
 
@@ -308,17 +310,19 @@ class LstmPerPixelRenderer(nn.Module):
 
 
         encoder = []
-        encoder += [nn.Conv2d(self.n_extrinsics + opt.tex_features, ngf, kernel_size=4, stride=2, padding=1, bias=True)]
+        encoder += [nn.Conv2d(self.n_extrinsics + opt.tex_features, ngf, kernel_size=1, stride=1, bias=True)]
         for i in range(n_blocks-1): 
             encoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
 
         self.encoder = nn.Sequential(*encoder)
 
-        self.lstm = ConvLSTMCell((256, 256), ngf, ngf, (1, 1), True)
-        self.hidden_dims = (opt.batch_size, ngf, 256,256)
+        self.lstm = ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+        self.hidden_dims = (opt.batch_size, ngf, opt.fineSize,opt.fineSize)
         decoder = []
-        decoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
-        decoder += [nn.ConvTranspose2d(ngf, output_nc, kernel_size=4, stride=2, padding=1, bias=True)]
+        #decoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+        #decoder += [nn.ConvTranspose2d(ngf, output_nc, kernel_size=4, stride=2, padding=1)]
+        decoder += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
+
         decoder += [nn.Tanh()]
         self.decoder = nn.Sequential(*decoder)
 

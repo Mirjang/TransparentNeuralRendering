@@ -22,10 +22,10 @@ export MODEL=neuralRenderer
 
 # texture parameters
 export TEX_DIM=256
-export TEX_FEATURES=8
+export TEX_FEATURES=4
 export NUM_DEPTH_LAYERS=8
 
-export LR=0.1
+export LR=0.001
 
 
 # #experiment name
