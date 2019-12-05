@@ -1,3 +1,4 @@
+set -ex
 
 # dataset
 # DATA=spheres_250v

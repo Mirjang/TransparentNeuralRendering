@@ -1,4 +1,4 @@
--ex
+set -ex
 
 DATASETS_DIR=/mnt/raid/patrickradner/datasets
 
