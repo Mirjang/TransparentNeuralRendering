@@ -11,7 +11,7 @@ set BATCH_SIZE=1
 rem renderer
 set RENDERER=MultiTarget-neuralRenderer_200
 rem GPU
-set GPU_ID="0"
+set GPU_ID="1"
 
 rem display params
 set DISP_FREQ=100

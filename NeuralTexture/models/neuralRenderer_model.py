@@ -165,11 +165,14 @@ class BlendRenderer(nn.Module):
 
 
     def forward(self, x): 
-        # simple blending, assumes tex_dims = 3
-        alpha = .5
+        # simple blending, assumes tex_dims = 4
+        
+        alphaP = x[:, -1:, ...]
         output = x[:, -self.nFeatures:,...]
         for d in reversed(range(self.n_layers-1)): 
-            output = (1-alpha)* output  + alpha * x[:, self.nFeatures*d:self.nFeatures*(d+1), ...] 
+            alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*f+self.nOUT+1, ...] 
+            output = (1-alphaP)* output  + alpha * x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...] 
+            alphaP = alpha
         return output[:, 0:self.nOUT, ...]
 
 class ResidualBlock(nn.Module): 
