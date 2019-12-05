@@ -353,7 +353,7 @@ def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, i
     elif(renderer.startswith("PerPixel")):
         net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
     elif(renderer.startswith("Blend")):
-        net = BlendRenderer(renderer, n_feature, N_OUT, opt.n_layers)
+        net = BlendRenderer(renderer, n_feature, N_OUT, opt.num_depth_layers)
     elif(renderer.startswith("Lstm")):
         net = LstmPerPixelRenderer(renderer, N_OUT, opt)
     return networks.init_net(net, init_type, init_gain, gpu_ids)
