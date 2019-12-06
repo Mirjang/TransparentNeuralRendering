@@ -32,7 +32,7 @@ if __name__ == '__main__':
     opt.serial_batches = True  # no shuffle
     opt.no_augmentation = True    # no flip
     opt.display_id = -1   # no visdom display
-
+    opt.num_threads = 0
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)
@@ -64,6 +64,9 @@ if __name__ == '__main__':
     if opt.eval:
         model.eval()
     for i, data in enumerate(dataset):
+    #for i in range(len(dataset)):
+
+        #data = dataset[i]
         #if i >= opt.num_test:
         #    break
         model.set_input(data)

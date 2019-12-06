@@ -42,7 +42,7 @@ def make_dataset(dir, opt):
             uvs.append(os.path.join(dir, str(i) + "_uv_"+str(l)+".png"))
         #too slow for large datasets
         #uvs = sorted(glob.glob(os.path.join(dir, str(i) + "_uv_*.exr")))
-        paths.append((rgb, sorted(uvs)))
+        paths.append((i, rgb, sorted(uvs)))
         i = i+1
 
     return paths
@@ -69,7 +69,7 @@ class TransparentPNGDataset(BaseDataset):
         #print('GET ITEM: ', index)
         AB_path = self.AB_paths[index]
 
-        rgb_path, uv_paths = AB_path
+        _, rgb_path, uv_paths = AB_path
 
         assert(len(uv_paths) >= self.opt.num_depth_layers), "len(uv_paths) !>= num_depth_layers"
         # default image dimensions

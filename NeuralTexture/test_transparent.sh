@@ -12,7 +12,7 @@ LR=0.001
 shCH_SIZE=1
 
  #GPU
-GPU_ID="1"
+GPU_ID="2"
 
  #display params
 DISP_FREQ=50
@@ -28,3 +28,5 @@ source "./experiment_setups/PerPixel4_lab_2.sh"
 
 
 python test.py --nObjects $NUM_OBJECTS --use_extrinsics --rendererType $RENDERER_TYPE --num_depth_layers $NUM_DEPTH_LAYERS --name $NAME --epoch $EPOCH --display_winsize 512 --nObjects $NUM_OBJECTS --tex_dim $TEX_DIM --tex_features $TEX_FEATURES --dataroot $DATASETS_DIR/$DATA  --lossType $LOSS --model $MODEL --netG unet_256 --dataset_mode $DATASET_MODE --norm batch  --gpu_ids $GPU_ID $OPTIONS
+
+
