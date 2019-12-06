@@ -498,9 +498,10 @@ class NeuralRendererModel(BaseModel):
         if(opt.isTrain):
             for i in range(1,self.nObjects):
                 self.visual_names.append(str("texture"+str(i)+"_col"))
+            self.visual_names += ['sampled_texture_col']
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        self.visual_names += ['sampled_texture_col', 'fake' ,'target']
+        self.visual_names += ['fake' ,'target']
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:

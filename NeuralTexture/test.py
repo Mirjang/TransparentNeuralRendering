@@ -9,6 +9,8 @@ import numpy as np
 from PIL import Image
 import time
 
+from util.video_output import VideoOutput
+
 def save_tensor_image(input_image, image_path):
     if isinstance(input_image, torch.Tensor):
         image_tensor = input_image.data
@@ -50,6 +52,8 @@ if __name__ == '__main__':
     webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
 
 
+    video_output = VideoOutput(opt)
+
     sum_time = 0
     total_runs = dataset_size
     warm_up = 50
@@ -80,8 +84,10 @@ if __name__ == '__main__':
         if i % 5 == 0:
             print('processing (%04d)-th image... %s' % (i, img_path))
         save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
+        video_output.writeFrame(visuals)
+
 
     print('mean eval time: ', (sum_time / (total_runs - warm_up)))
-
+    video_output.close()
     # save the website
     webpage.save()
