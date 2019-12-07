@@ -32,9 +32,10 @@ class VideoOutput():
             if(i==0): 
                 display = im
             else: 
-                display = np.concatenate((display, im))
+                display = np.concatenate((display, im), axis = 1)
             i+=1
 
+        #print(display.shape)
         if(self.writer == None): 
             dims = display.shape[1], display.shape[0]
             self.writer = VideoWriter(self.out_file, VideoWriter_fourcc(*"XVID"), 30.0, dims, True)
