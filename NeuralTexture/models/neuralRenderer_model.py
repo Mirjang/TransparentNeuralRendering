@@ -199,33 +199,25 @@ class ResidualBlock(nn.Module):
 
 
 class PerPixelRenderer(nn.Module): 
-    def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d):
+    def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_inout_convs = True):
         super(PerPixelRenderer, self).__init__()
         
-        if renderer=='PerPixel_2':
-            n_blocks = 2
-        elif renderer=='PerPixel_4':
-            n_blocks = 4
-        elif renderer=='PerPixel_8':
-            n_blocks = 8
-        elif renderer=='PerPixel_16':
-            n_blocks = 16
-        elif renderer=='PerPixel_32':
-            n_blocks = 32
+        n_blocks = int(renderer.split("_")[1])
         
         norm_layer=None
 
         model = []
         #model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
-        model += [nn.Conv2d(input_nc, ngf, kernel_size=1, stride=1 , bias=True)]
+        if(use_inout_convs): 
+            model += [nn.Conv2d(input_nc, ngf, kernel_size=1, stride=1 , bias=True)]
 
         for i in range(n_blocks): 
             model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
 
         #model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, is_last=True)]
-
-        model += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
-        model += [nn.Tanh()]
+        if(use_inout_convs): 
+            model += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
+            model += [nn.Tanh()]
         self.model = nn.Sequential(*model)
 
     def forward(self, x): 
@@ -297,21 +289,14 @@ class LstmPerPixelRenderer(nn.Module):
         self.tex_channels = opt.tex_features
         ngf = opt.ngf
         
-        if renderer=='LstmPerPixel_2':
-            n_blocks = 2
-        elif renderer=='LstmPerPixel_4':
-            n_blocks = 4
-        elif renderer=='LstmPerPixel_8':
-            n_blocks = 8
-        elif renderer=='LstmPerPixel_16':
-            n_blocks = 16
-        elif renderer=='LstmPerPixel_32':
-            n_blocks = 32
 
+        ed_blocks = renderer.split("_")
+        n_encoder_blocks = int(ed_blocks[1])
+        n_decoder_blocks = int(ed_blocks[2])
 
         encoder = []
         encoder += [nn.Conv2d(self.n_extrinsics + opt.tex_features, ngf, kernel_size=1, stride=1, bias=True)]
-        for i in range(n_blocks-1): 
+        for i in range(n_encoder_blocks): 
             encoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
 
         self.encoder = nn.Sequential(*encoder)
@@ -319,8 +304,10 @@ class LstmPerPixelRenderer(nn.Module):
         self.lstm = ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
         self.hidden_dims = (opt.batch_size, ngf, opt.fineSize,opt.fineSize)
         decoder = []
-        #decoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
-        #decoder += [nn.ConvTranspose2d(ngf, output_nc, kernel_size=4, stride=2, padding=1)]
+
+        for i in range(n_decoder_blocks): 
+            decoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+
         decoder += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
 
         decoder += [nn.Tanh()]
@@ -347,6 +334,55 @@ class LstmPerPixelRenderer(nn.Module):
 
         return self.decoder(h)
 
+
+class LstmUNETRenderer(nn.Module): 
+    def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d, use_dropout = False):
+        super(LstmUNETRenderer, self).__init__()
+        self.n_layers = opt.num_depth_layers
+        self.n_extrinsics = 6 if opt.use_extrinsics else 0 
+        self.tex_channels = opt.tex_features
+        ngf = opt.ngf
+        
+
+        ed_blocks = renderer.split("_")
+        n_encoder_blocks = int(ed_blocks[1])
+        n_decoder_layers = int(ed_blocks[2])
+
+        encoder = []
+        encoder += [nn.Conv2d(self.n_extrinsics + opt.tex_features, ngf, kernel_size=1, stride=1, bias=True)]
+        for i in range(n_encoder_blocks): 
+            encoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+
+        self.encoder = nn.Sequential(*encoder)
+
+        self.lstm = ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+        self.hidden_dims = (opt.batch_size, ngf, opt.fineSize,opt.fineSize)
+
+        #def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False):
+        self.decoder = UnetRenderer("UNET_"+str(n_decoder_layers)+"_level", ngf, output_nc, opt.ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+
+
+    def forward(self, x):
+  
+        if(self.n_extrinsics>0): 
+            extrinsics = x[:, :self.n_extrinsics,...]
+        x.device
+        h = torch.zeros(self.hidden_dims).to(x.device)
+        c = torch.zeros(self.hidden_dims).to(x.device)
+
+        for i in reversed(range(self.n_layers)): 
+            l = self.n_extrinsics + i * self.tex_channels
+            u = l + self.tex_channels
+            x_i = x[:,l:u,...]
+            if(self.n_extrinsics>0): 
+                x_i = torch.cat([extrinsics, x_i], 1)
+
+            x_i = self.encoder(x_i)
+            h, c = self.lstm(x_i, (h,c))
+
+        return self.decoder(h)
+
+
 def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
     ngf = opt.ngf
     
@@ -361,8 +397,10 @@ def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, i
         net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
     elif(renderer.startswith("Blend")):
         net = BlendRenderer(renderer, n_feature, N_OUT, opt.num_depth_layers)
-    elif(renderer.startswith("Lstm")):
+    elif(renderer.startswith("LstmPerPixel")):
         net = LstmPerPixelRenderer(renderer, N_OUT, opt)
+    elif(renderer.startswith("LstmUNET")):
+        net = LstmUNETRenderer(renderer, N_OUT, opt, use_dropout=use_dropout)
     return networks.init_net(net, init_type, init_gain, gpu_ids)
 
 class Texture(nn.Module):

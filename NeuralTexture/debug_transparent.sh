@@ -17,7 +17,9 @@ GPU_ID="3"
 # display params
 DISP_FREQ=100
 
-source "./experiment_setups/LstmPerPixel4_lab_2.sh"
+source "./experiment_setups/Lstm2UNET3_lab2.sh"
+#source "./experiment_setups/PerLayerPerPixel4_lab2.sh"
+#source "./experiment_setups/LstmPerPixel4_lab_2.sh"
 #source "./experiment_setups/PerPixel4_lab_2.sh"
 #source "./experiment_setups/UNET_5_lab_2.sh"
 #source "./experiment_setups/Blend_lab_2.sh"

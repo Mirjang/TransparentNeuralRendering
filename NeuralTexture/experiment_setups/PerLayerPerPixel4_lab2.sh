@@ -14,7 +14,7 @@ export NUM_OBJECTS=7
 
 
 # network used for rendering 
-export RENDERER_TYPE=LstmPerPixel_3_0
+export RENDERER_TYPE=LstmPerPixel_2_8
 
 # models -- for simple blending use debug
 export MODEL=neuralRenderer
@@ -35,4 +35,4 @@ NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJEC
 export OPTIONS="--use_extrinsics --ngf 32"
 
 # continue training an existing model
-CONTINUE="--continue_train --epoch_count 12"
+#CONTINUE="--continue_train --epoch_count 12"
