@@ -35,4 +35,4 @@ NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJEC
 export OPTIONS="--use_extrinsics --ngf 32"
 
 # continue training an existing model
-#CONTINUE="--continue_train --epoch_count 12"
+CONTINUE="--continue_train --epoch_count 5"

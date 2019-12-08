@@ -20,7 +20,8 @@ LOSS=L1
 
 EPOCH=latest
 
-source "./experiment_setups/PerLayerPerPixel4_lab2.sh"
+source "./experiment_setups/Lstm2UNET3_lab2.sh"
+#source "./experiment_setups/PerLayerPerPixel4_lab2.sh"
 #source "./experiment_setups/LstmPerPixel4_lab_2.sh"
 #source "./experiment_setups/PerPixel4_lab_2.sh"
 #source "./experiment_setups/UNET_5_lab_2.sh"

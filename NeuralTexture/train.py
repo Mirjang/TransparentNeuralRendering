@@ -9,7 +9,18 @@ if __name__ == '__main__':
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)
+
+
+    phase = opt.phase
+    opt.phase = opt.validation_set
+    validation_loader = CreateDataLoader(opt)
+    validation_set = validation_loader.load_data()
+    opt.phase = phase
+
+    validation_size = len(validation_loader)
     print('#training images = %d' % dataset_size)
+    print('#validation images = %d' % validation_size)
+
     print('#training objects = %d' % opt.nObjects)
 
     model = create_model(opt)
@@ -59,6 +70,30 @@ if __name__ == '__main__':
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_steps))
             model.save_networks('latest')
             model.save_networks(epoch)
+
+
+        #validation
+        if epoch % opt.validation_freq == 0 and opt.validation_freq>0:
+            iter_start_time = time.time()
+            losses = {}
+            for i, data in enumerate(validation_set):
+                model.set_input(data) 
+                torch.cuda.synchronize()                
+                model.test()
+                model.compute_losses()
+                current_losses = model.get_current_losses()
+                # avg. validation loss
+                losses = {key: losses.get(key, 0) + current_losses.get(key, 0) / validation_size
+                    for key in set(dict1) | set(dict2)}
+
+            visualizer.reset()
+            corrected_dict = { k.replace('_', '_val_'): v for k, v in ori_dict.items() }
+                
+            t = (time.time() - iter_start_time) / opt.batch_size
+            visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
+            if opt.display_id > 0:
+                visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
+
 
         print('End of epoch %d / %d \t Time Taken: %d sec' %
               (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))

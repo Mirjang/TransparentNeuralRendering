@@ -711,7 +711,7 @@ class NeuralRendererModel(BaseModel):
         return total_loss
 
 
-    def backward_G(self, epoch):
+    def backward_G(self, epoch, apply_grad=True):
         # compute epoch weight
         (fake_weight, texture_weight) = self.computeEpochWeight(epoch)
         fake_weight = 1
@@ -759,7 +759,8 @@ class NeuralRendererModel(BaseModel):
         #self.loss_G = self.loss_G_GAN + self.loss_G_L1 + self.regularizerTex
         self.loss_G = self.loss_G_L1 + self.regularizerTex
 
-        self.loss_G.backward()
+        if(apply_grad):
+            self.loss_G.backward()
 
     def optimize_parameters(self, epoch_iter):
         self.forward()
@@ -793,3 +794,6 @@ class NeuralRendererModel(BaseModel):
             #self.backward_D()
             self.backward_G(epoch_iter)
             self.optimizer_T.step()
+
+    def compute_losses(self): 
+        self.backward_G(0, apply_grad=False)

@@ -31,7 +31,9 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
 
 
-    
+        parser.add_argument('--validation_freq', type=int, default=1, help='validate after every x epochs')
+        parser.add_argument('--validation_set', type=str, default="test", help='name of the validation set (default: test, bc. i didnt defina a validation set for most datasets)')
+
 
         self.isTrain = True
         return parser
