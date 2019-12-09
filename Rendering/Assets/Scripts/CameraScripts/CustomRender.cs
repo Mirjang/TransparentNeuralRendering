@@ -123,13 +123,11 @@ public class CustomRender : MonoBehaviour
             if (write)
             {
                 outputTextures(rgb, uvBuffers);
-                //var r = cam.transform.rotation.eulerAngles / 360;
-                var r = cam.transform.forward.normalized; 
-                string camPoseStr = cam.transform.position.x +" "+ cam.transform.position.y +" "+ cam.transform.position.z + " " + r.x + " "+ r.y + " "+ r.z + "\n";
-                File.AppendAllText(RenderOptions.getInstance().outputDir + "camera_pose.txt", camPoseStr); 
-
-
             }
+            //var r = cam.transform.rotation.eulerAngles / 360;
+            var r = cam.transform.forward.normalized;
+            string camPoseStr = cam.transform.position.x + " " + cam.transform.position.y + " " + cam.transform.position.z + " " + r.x + " " + r.y + " " + r.z + "\n";
+            File.AppendAllText(RenderOptions.getInstance().outputDir + "camera_pose.txt", camPoseStr);
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
             {

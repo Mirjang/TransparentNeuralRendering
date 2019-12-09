@@ -164,6 +164,7 @@ MonoBehaviour:
   renderRGBUnity: 1
   renderUVOpaque: 0
   renderTransparent: 1
+  deleteDirIfExists: 0
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
@@ -194,12 +195,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ce30f37123e99f4685fede3db442ebe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  file: {fileID: 4900000, guid: 8d642e0b6a144c9409761a0199af273a, type: 3}
+  file: {fileID: 4900000, guid: a75622ff834e49d45811f37ef7fe1bc1, type: 3}
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   poses: []
   frameCounter: 0
-  actionOnFinish: 2
+  actionOnFinish: 1
   saveImages: 1
 --- !u!1 &705507993
 GameObject:

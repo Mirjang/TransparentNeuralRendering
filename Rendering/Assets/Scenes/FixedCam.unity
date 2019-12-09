@@ -153,16 +153,17 @@ MonoBehaviour:
   exrCompression: 2
   useCustomGlobalAlpha: 0
   globalAlpha: 0.5
-  numFrames: 6000
+  numFrames: 5000
   startFrame: 2
   numDepthPeelLayers: 8
-  experiment_name: lab2
+  experiment_name: lab3
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
   renderUVOpaque: 0
   renderTransparent: 1
+  deleteDirIfExists: 0
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
@@ -385,15 +386,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75d5089cee2602e42aa9724b69f0fc49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minRadius: 5
-  maxRadius: 7
-  minAngleY: -80
-  maxAngleY: 80
+  minRadius: 6
+  maxRadius: 6
+  minAngleY: -90
+  maxAngleY: 90
   minAngleX: -30
   maxAngleX: 80
-  centerRadius: {x: 3, y: 3, z: 3}
+  centerRadius: {x: 0, y: 0, z: 0}
   saveImages: 1
-  actionOnFinish: 2
+  actionOnFinish: 1
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   lookAtTarget: {fileID: 1067380337}
@@ -408,7 +409,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1067380335}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.4, y: 2.82, z: -0.99}
+  m_LocalPosition: {x: 1.2, y: 2.82, z: -1.77}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

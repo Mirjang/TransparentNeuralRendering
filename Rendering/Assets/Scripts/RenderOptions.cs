@@ -31,6 +31,8 @@ public class RenderOptions : MonoBehaviour
     public bool renderUVOpaque = false;
     public bool renderTransparent = true;
 
+    public bool deleteDirIfExists = false; 
+
     public int framesSinceStart = 0; 
     public Material default_t;
 
@@ -52,7 +54,12 @@ public class RenderOptions : MonoBehaviour
                 outputDir = Application.dataPath + "/mnt/raid/patrickradner/datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
             }
             else
-                outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet?"train/":"test/");
+            {
+                
+                outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
+                outputDir = "D:\\datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
+
+            }
         }
         else
         {
@@ -73,10 +80,35 @@ public class RenderOptions : MonoBehaviour
         Debug.Log("Output Dir: " + outputDir);
         if (System.IO.Directory.Exists(outputDir))
         {
-            System.IO.Directory.Delete(outputDir, true);
+            var pose_file = outputDir + "camera_pose.txt";
 
+            if (deleteDirIfExists || ! System.IO.File.Exists(pose_file))
+            {
+                System.IO.Directory.Delete(outputDir, true);
+                System.IO.Directory.CreateDirectory(outputDir);
+
+            }
+            else
+            {
+                var prevPoses = System.IO.File.ReadAllLines(pose_file);
+                int nPrevFrames = 0; 
+
+                foreach(var line in prevPoses)
+                {
+                    if (line.Split(' ').Length >= 6)
+                        ++nPrevFrames; 
+                }
+                frameIdCounter = nPrevFrames;
+                framesSinceStart = nPrevFrames;
+
+                Debug.Log("Continuing exitsing dataset: " + nPrevFrames + "/" + numFrames); 
+
+            }
         }
-        System.IO.Directory.CreateDirectory(outputDir);
+        else
+        {
+            System.IO.Directory.CreateDirectory(outputDir);
+        }
 
         assignIDtoObjects(); 
         instance = this;
@@ -104,7 +136,7 @@ public class RenderOptions : MonoBehaviour
 
     }
 
-    private void assignIDtoObjects()
+    private void assignIDtoObjects(bool continueDataset = false)
     {
 
         //disable unnecessary renderers and enable proxy renderer if present
@@ -140,7 +172,22 @@ public class RenderOptions : MonoBehaviour
         Shader.SetGlobalInt("_MaxVisObjects", numVisibleObjects);
 
         names.Insert(0, "none"); 
-        System.IO.File.WriteAllLines(outputDir + "object_names.txt", names); 
+
+        if(continueDataset)
+        {
+            var prev_names = System.IO.File.ReadAllLines(outputDir + "object_names.txt");
+            Debug.Assert(prev_names.Length >= name.Length);
+            int i = 0; 
+            foreach(var line in names)
+            {
+                Debug.Assert(line.Equals(names[i]));
+                ++i; 
+            }
+        }
+        else
+        {
+            System.IO.File.WriteAllLines(outputDir + "object_names.txt", names);
+        }
 
     }
 
