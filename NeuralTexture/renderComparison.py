@@ -9,8 +9,6 @@ def main():
         print("call this thing with file containing paths to frames")
         exit()
 
-
-
     with open(sys.argv[1]) as f: 
         dirs = f.readlines()
         

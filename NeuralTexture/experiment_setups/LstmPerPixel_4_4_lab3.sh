@@ -2,7 +2,7 @@ set -ex
 
 # dataset
 # DATA=spheres_250v
-export DATA=lab2
+export DATA=lab3
 
 # choose between EXR and PNG loader
 export DATASET_MODE=transparent
@@ -10,11 +10,11 @@ export DATASET_MODE=transparent
 
 
 # number of objects in scene + 1 (background)
-export NUM_OBJECTS=7
+#export NUM_OBJECTS=7 #no longer required
 
 
 # network used for rendering 
-export RENDERER_TYPE=LstmUNET_2_3
+export RENDERER_TYPE=LstmPerPixel_4_4
 
 # models -- for simple blending use debug
 export MODEL=neuralRenderer
@@ -35,4 +35,4 @@ NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJEC
 export OPTIONS="--use_extrinsics --ngf 32"
 
 # continue training an existing model
-CONTINUE="--continue_train --epoch_count 16"
+#CONTINUE="--continue_train --epoch_count 12"

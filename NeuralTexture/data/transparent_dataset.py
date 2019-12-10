@@ -33,7 +33,15 @@ from util.exr import channels_to_ndarray
 def make_dataset(dir, opt):
     paths = [] 
 
+
+
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
+
+
+    
+    with open(os.path.join(dir, "object_names.txt")) as objnames: 
+        opt.nObjects  = len(objnames.readlines())
+
     i = 0  
     while os.path.exists(os.path.join(dir, str(i) + "_rgb.exr")):
         rgb = os.path.join(dir, str(i) + "_rgb.exr")
