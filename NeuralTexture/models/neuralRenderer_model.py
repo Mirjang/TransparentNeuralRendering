@@ -428,7 +428,7 @@ class Texture(nn.Module):
             for texture_id in objects_in_mask: 
                 #background is 0 in mask and has no texture atm
                 mask = mask_layer == texture_id
-                sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border')
+                sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                 layer_tex = layer_tex + sample * mask.float()
 
             layers.append(layer_tex)

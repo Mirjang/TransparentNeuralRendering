@@ -3,6 +3,9 @@ from options.train_options import TrainOptions
 from data import CreateDataLoader
 from models import create_model
 from util.visualizer import Visualizer
+import torch
+import numpy as np
+from PIL import Image
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
@@ -84,10 +87,10 @@ if __name__ == '__main__':
                 current_losses = model.get_current_losses()
                 # avg. validation loss
                 losses = {key: losses.get(key, 0) + current_losses.get(key, 0) / validation_size
-                    for key in set(dict1) | set(dict2)}
+                    for key in set(losses) | set(current_losses)}
 
             visualizer.reset()
-            corrected_dict = { k.replace('_', '_val_'): v for k, v in ori_dict.items() }
+            losses = { k.replace('_', '_val_'): v for k, v in losses.items() }
                 
             t = (time.time() - iter_start_time) / opt.batch_size
             visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
