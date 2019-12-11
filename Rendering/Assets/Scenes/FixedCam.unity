@@ -163,7 +163,7 @@ MonoBehaviour:
   renderRGBUnity: 1
   renderUVOpaque: 0
   renderTransparent: 1
-  deleteDirIfExists: 0
+  deleteDirIfExists: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
@@ -398,7 +398,7 @@ MonoBehaviour:
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   lookAtTarget: {fileID: 1067380337}
-  useDebugSphere: 1
+  useDebugSphere: 0
   debugSphere: {fileID: 5454705035396600405, guid: 401cdc779bb2db7499e9ea7c0a0b3f56,
     type: 3}
 --- !u!4 &1067380337

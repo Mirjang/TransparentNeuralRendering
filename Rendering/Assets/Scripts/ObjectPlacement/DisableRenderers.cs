@@ -9,7 +9,7 @@ public class DisableRenderers : MonoBehaviour
     public bool disableSelf = false;
 
 
-    public GameObject proxy; 
+    public GameObject proxy;
 
     private void Awake()
     {

@@ -41,12 +41,12 @@ public class CustomRender : MonoBehaviour
         uvBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
 
 
-        depthPeelBuffers[0] = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-        depthPeelBuffers[1] = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        depthPeelBuffers[0] = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+        depthPeelBuffers[1] = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
         depthPeelBuffers[0].Create();
         depthPeelBuffers[1].Create();
 
-        depthBuffer = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        depthBuffer = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
         depthBuffer.Create(); 
     }
 
@@ -65,7 +65,7 @@ public class CustomRender : MonoBehaviour
 
     public void RenderImage(bool write = true)
     {
-        RenderTexture rgb = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        RenderTexture rgb = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
 
         if (RenderOptions.getInstance().renderRGBUnity)
         {
@@ -89,8 +89,8 @@ public class CustomRender : MonoBehaviour
             DisableRenderers.disableAllRenderers(); 
 
 
-            colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+            uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
 
             cam.backgroundColor = new Color(1, 1, 1, 1);
             clearTexture(depthBuffer); 
@@ -99,8 +99,8 @@ public class CustomRender : MonoBehaviour
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
             {
-                colorBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-                uvBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+                colorBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+                uvBuffers[i] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
 
                 renderTargets[0] = colorBuffers[i].colorBuffer;
                 renderTargets[1] = uvBuffers[i].colorBuffer;
