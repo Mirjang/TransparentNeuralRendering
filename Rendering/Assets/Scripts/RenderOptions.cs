@@ -20,6 +20,7 @@ public class RenderOptions : MonoBehaviour
     public int startFrame = 2;
 
     public int numDepthPeelLayers = 8;
+    public int startDepthLayer = 0;
 
     public string experiment_name = ""; 
 
@@ -36,7 +37,8 @@ public class RenderOptions : MonoBehaviour
     public int framesSinceStart = 0; 
     public Material default_t;
 
-    private int numVisibleObjects; 
+    private int numVisibleObjects;
+
 
     public int camerIDCounter = 0;
     public int frameIdCounter = 0; 

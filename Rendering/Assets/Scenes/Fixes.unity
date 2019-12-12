@@ -156,13 +156,13 @@ MonoBehaviour:
   globalAlpha: 0.5
   numFrames: -1
   startFrame: 2
-  numDepthPeelLayers: 8
-  startDepthLayer: 0
-  experiment_name: lab3
+  numDepthPeelLayers: 16
+  startDepthLayer: 8
+  experiment_name: lab3_16L
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
-  renderRGBUnity: 1
+  renderRGBUnity: 0
   renderUVOpaque: 0
   renderTransparent: 1
   deleteDirIfExists: 0

@@ -170,8 +170,9 @@ public class CustomRender : MonoBehaviour
 
     private void writeTexturesToEXR(RenderTexture rgb, RenderTexture[] uvs, int frameID)
     {
-        writeTextureToEXR(rgb, "rgb", frameID);
-        for (int i = 0; i < uvs.Length; ++i)
+        if(RenderOptions.getInstance().renderRGBUnity)
+            writeTextureToEXR(rgb, "rgb", frameID);
+        for (int i = RenderOptions.getInstance().startDepthLayer; i < uvs.Length; ++i)
         {
             writeTextureToEXR(uvs[i], "uv_" + i, frameID);
         }
@@ -194,8 +195,9 @@ public class CustomRender : MonoBehaviour
 
     private void writeTexturesToPng(RenderTexture rgb, RenderTexture[] uvs, int frameID)
     {
-        writeTextureToPng(rgb, "rgb", frameID); 
-        for(int i = 0; i< uvs.Length; ++i )
+        if(RenderOptions.getInstance().renderRGBUnity)
+            writeTextureToPng(rgb, "rgb", frameID); 
+        for(int i = RenderOptions.getInstance().startDepthLayer; i< uvs.Length; ++i )
         {
             writeTextureToPng(uvs[i], "uv_" + i, frameID); 
         }
