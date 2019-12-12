@@ -23,16 +23,16 @@ export MODEL=neuralRenderer
 # texture parameters
 export TEX_DIM=256
 export TEX_FEATURES=8
-export NUM_DEPTH_LAYERS=8
+export NUM_DEPTH_LAYERS=16
 
 export LR=0.001
 
 
 # #experiment name
-NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}x${NUM_OBJECTS}
+NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}
 # additional options 
 # OPTIONS=--use_extrinsics
 export OPTIONS="--use_extrinsics --ngf 32"
 
 # continue training an existing model
-#CONTINUE="--continue_train --epoch_count 12"
+#CONTINUE="--continue_train --epoch_count 47"

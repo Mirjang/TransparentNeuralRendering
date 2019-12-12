@@ -40,7 +40,7 @@ if __name__ == '__main__':
         epoch_start_time = time.time()
         iter_data_time = time.time()
         epoch_iter = 0
-
+        losses={}
         for i, data in enumerate(dataset):
             iter_start_time = time.time()
             if total_steps % opt.print_freq == 0:
@@ -76,26 +76,26 @@ if __name__ == '__main__':
 
 
         #validation
-        if epoch % opt.validation_freq == 0 and opt.validation_freq>0:
-            iter_start_time = time.time()
-            losses = {}
-            for i, data in enumerate(validation_set):
-                model.set_input(data) 
-                torch.cuda.synchronize()                
-                model.test()
-                model.compute_losses()
-                current_losses = model.get_current_losses()
-                # avg. validation loss
-                losses = {key: losses.get(key, 0) + current_losses.get(key, 0) / validation_size
-                    for key in set(losses) | set(current_losses)}
+        # if epoch % opt.validation_freq == 0 and opt.validation_freq>0:
+        #     iter_start_time = time.time()
+        #     val_losses = {}
+        #     for i, data in enumerate(validation_set):
+        #         model.set_input(data) 
+        #         torch.cuda.synchronize()                
+        #         model.test()
+        #         model.compute_losses()
+        #         current_losses = model.get_current_losses()
+        #         # avg. validation loss
+        #         val_losses = {key: val_losses.get(key, 0) + current_losses.get(key, 0) / validation_size
+        #             for key in set(val_losses) | set(current_losses)}
 
-            visualizer.reset()
-            losses = { k.replace('_', '_val_'): v for k, v in losses.items() }
-                
-            t = (time.time() - iter_start_time) / opt.batch_size
-            visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
-            if opt.display_id > 0:
-                visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
+        #     visualizer.reset()
+        #     val_losses = { k.replace('_', '_val_'): v for k, v in losses.items() }
+        #     val_losses.update(losses) # add normal losses, so visualizer doesnt crap itself
+        #     t = (time.time() - iter_start_time) / opt.batch_size
+        #     visualizer.print_current_losses(epoch, epoch_iter, losses, t, t_data)
+        #     if opt.display_id > 0:
+        #         visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, opt, losses)
 
 
         print('End of epoch %d / %d \t Time Taken: %d sec' %

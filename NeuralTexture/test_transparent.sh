@@ -20,7 +20,8 @@ LOSS=L1
 
 EPOCH=latest
 
-source "./experiment_setups/Lstm2UNET3_lab2.sh"
+source "./experiment_setups/LstmPerPixel_4_4_lab3.sh"
+#source "./experiment_setups/Lstm2UNET3_lab2.sh"
 #source "./experiment_setups/PerLayerPerPixel4_lab2.sh"
 #source "./experiment_setups/LstmPerPixel4_lab_2.sh"
 #source "./experiment_setups/PerPixel4_lab_2.sh"
@@ -29,6 +30,6 @@ source "./experiment_setups/Lstm2UNET3_lab2.sh"
 #source "./experiment_setups/Debug.sh"
 
 
-python test.py --nObjects $NUM_OBJECTS --rendererType $RENDERER_TYPE --num_depth_layers $NUM_DEPTH_LAYERS --name $NAME --epoch $EPOCH --display_winsize 512 --nObjects $NUM_OBJECTS --tex_dim $TEX_DIM --tex_features $TEX_FEATURES --dataroot $DATASETS_DIR/$DATA  --lossType $LOSS --model $MODEL --netG unet_256 --dataset_mode $DATASET_MODE --norm batch --gpu_ids $GPU_ID $OPTIONS
+python test.py --rendererType $RENDERER_TYPE --num_depth_layers $NUM_DEPTH_LAYERS --name $NAME --epoch $EPOCH --display_winsize 512 --tex_dim $TEX_DIM --tex_features $TEX_FEATURES --dataroot $DATASETS_DIR/$DATA  --lossType $LOSS --model $MODEL --netG unet_256 --dataset_mode $DATASET_MODE --norm batch --gpu_ids $GPU_ID $OPTIONS
 
 
