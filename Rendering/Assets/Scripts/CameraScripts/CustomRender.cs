@@ -11,7 +11,8 @@ public class CustomRender : MonoBehaviour
     public Shader uvShader;
     public Shader depthPeelShader;
     public Shader blendShader;
-    public Shader initShader; 
+    public Shader initShader;
+    public Shader worldPosShader; 
 
     public TextureDisplay display = null;
 
@@ -29,6 +30,8 @@ public class CustomRender : MonoBehaviour
     private RenderTexture[] colorBuffers;
     private RenderTexture[] uvBuffers;
 
+    private RenderTexture[] worldPositions;
+    private RenderTexture dumpRT; 
     // Start is called before the first frame update
     void Start()
     {
@@ -40,6 +43,14 @@ public class CustomRender : MonoBehaviour
         colorBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
         uvBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
 
+        worldPositions = new RenderTexture[RenderOptions.getInstance().getNumVisibleObjects()+1]; 
+        for(int i = 0; i<RenderOptions.getInstance().getNumVisibleObjects()+1; ++i)
+        {
+            worldPositions[i] = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+            worldPositions[i].enableRandomWrite = true;
+            worldPositions[i].Create(); 
+        }
+        dumpRT = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
 
         depthPeelBuffers[0] = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
         depthPeelBuffers[1] = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
@@ -141,7 +152,67 @@ public class CustomRender : MonoBehaviour
             }
         }
 
+        if(RenderOptions.getInstance().renderWorldPos)
+        {
+            DisableRenderers.disableAllRenderers(); // enables proxies
+
+            List<Renderer> visibleObjects = RenderOptions.getInstance().getVisibleObjects();
+
+            foreach (var r in visibleObjects)
+            {
+                r.enabled = false;
+            }
+
+            cam.SetTargetBuffers(dumpRT.colorBuffer, depthBuffer.depthBuffer);
+
+            for (int i = 0; i < visibleObjects.Count; ++i)
+            {
+                visibleObjects[i].enabled = true;
+                clearTexture(depthBuffer);
+                Graphics.ClearRandomWriteTargets();
+                Graphics.SetRandomWriteTarget(1, worldPositions[i+1]);//worlPos[0] = none
+                cam.RenderWithShader(worldPosShader, null); 
+                visibleObjects[i].enabled = false; 
+
+            }
+            Graphics.ClearRandomWriteTargets();
+
+            foreach (var r in visibleObjects)
+            {
+                r.enabled = true; 
+            }
+
+
+
+
+        }
+
         rgb.Release(); 
+
+    }
+
+    private void OnDestroy()
+    {
+
+        for (int i = 0; i < worldPositions.Length; ++i)
+        {
+            outputTexture(worldPositions[i], "positions_" + i);
+        }
+        Debug.Log("Wrote worldpositions");
+       
+    }
+
+    private void outputTexture(RenderTexture rt, string name)
+    {
+        switch (RenderOptions.getInstance().textureOutputMode)
+        {
+            case RenderOptions.TextureOutputMode.PNG:
+                writeTextureToPng(rt, name); 
+                break;
+            case RenderOptions.TextureOutputMode.EXR:
+                writeTextureToEXR(rt, name);
+                break; 
+        }
 
     }
 
@@ -171,20 +242,20 @@ public class CustomRender : MonoBehaviour
     private void writeTexturesToEXR(RenderTexture rgb, RenderTexture[] uvs, int frameID)
     {
         if(RenderOptions.getInstance().renderRGBUnity)
-            writeTextureToEXR(rgb, "rgb", frameID);
+            writeTextureToEXR(rgb, frameID + "_rgb");
         for (int i = RenderOptions.getInstance().startDepthLayer; i < uvs.Length; ++i)
         {
-            writeTextureToEXR(uvs[i], "uv_" + i, frameID);
+            writeTextureToEXR(uvs[i], frameID + "_uv_" + i);
         }
 
     }
 
 
-    private void writeTextureToEXR(RenderTexture rt, string name, int frameID)
+    private void writeTextureToEXR(RenderTexture rt, string name)
     {
         Texture2D tex = getFloatTextureFormRenderTexture(rt);
         var blob = tex.EncodeToEXR(Texture2D.EXRFlags.OutputAsFloat | RenderOptions.getInstance().exrCompression);
-        string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_" + name + ".exr";
+        string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + name + ".exr";
         File.WriteAllBytes(filename, blob);
         if(RenderOptions.getInstance().logOutputVerbose)
             Debug.Log("Wrote: " + filename);
@@ -196,19 +267,19 @@ public class CustomRender : MonoBehaviour
     private void writeTexturesToPng(RenderTexture rgb, RenderTexture[] uvs, int frameID)
     {
         if(RenderOptions.getInstance().renderRGBUnity)
-            writeTextureToPng(rgb, "rgb", frameID); 
+            writeTextureToPng(rgb, frameID +"_rgb"); 
         for(int i = RenderOptions.getInstance().startDepthLayer; i< uvs.Length; ++i )
         {
-            writeTextureToPng(uvs[i], "uv_" + i, frameID); 
+            writeTextureToPng(uvs[i], frameID + "_uv_" + i); 
         }
     }
 
 
-    private void writeTextureToPng(RenderTexture rt, string name, int frameID)
+    private void writeTextureToPng(RenderTexture rt, string name)
     {
         Texture2D tex = getTextureFormRenderTexture(rt); 
         var blob = tex.EncodeToPNG();
-        string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + frameID + "_" + name + ".png";
+        string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + name + ".png";
 
         File.WriteAllBytes(filename, blob);
         if (RenderOptions.getInstance().logOutputVerbose)

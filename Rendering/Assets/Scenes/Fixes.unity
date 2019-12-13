@@ -154,18 +154,18 @@ MonoBehaviour:
   exrCompression: 2
   useCustomGlobalAlpha: 0
   globalAlpha: 0.5
-  numFrames: -1
+  numFrames: 400
   startFrame: 2
-  numDepthPeelLayers: 16
-  startDepthLayer: 8
-  experiment_name: lab3_16L
+  numDepthPeelLayers: 4
+  startDepthLayer: 0
+  experiment_name: lab3_wposwtf
   outputDir: 
-  isTrainSet: 1
+  isTrainSet: 0
   logOutputVerbose: 0
   renderRGBUnity: 0
-  renderUVOpaque: 0
-  renderTransparent: 1
-  deleteDirIfExists: 0
+  renderTransparent: 0
+  renderWorldPos: 1
+  deleteDirIfExists: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
@@ -196,7 +196,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ce30f37123e99f4685fede3db442ebe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  file: {fileID: 4900000, guid: 171b2cac6c0f1634e8dd8b447f58c521, type: 3}
+  file: {fileID: 4900000, guid: a75622ff834e49d45811f37ef7fe1bc1, type: 3}
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   poses: []
@@ -548,3 +548,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8bd499bd9fb8af4eb4f29091e644227, type: 3}
+--- !u!1 &2083964480 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4633097957115926150, guid: b8bd499bd9fb8af4eb4f29091e644227,
+    type: 3}
+  m_PrefabInstance: {fileID: 1857643860}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &2083964481
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2083964480}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 32.5888, y: 28.310745, z: 26.247292}
+  m_Center: {x: 0, y: 4.9448357, z: -6.890953}

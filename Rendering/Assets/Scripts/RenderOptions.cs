@@ -29,9 +29,8 @@ public class RenderOptions : MonoBehaviour
     public bool logOutputVerbose = true; 
 
     public bool renderRGBUnity = true;
-    public bool renderUVOpaque = false;
     public bool renderTransparent = true;
-
+    public bool renderWorldPos = true; 
     public bool deleteDirIfExists = false; 
 
     public int framesSinceStart = 0; 
@@ -39,6 +38,7 @@ public class RenderOptions : MonoBehaviour
 
     private int numVisibleObjects;
 
+    private List<Renderer> visibleObjects = new List<Renderer>(); 
 
     public int camerIDCounter = 0;
     public int frameIdCounter = 0; 
@@ -73,9 +73,13 @@ public class RenderOptions : MonoBehaviour
         {
             Debug.LogError("Scalar Int render target format not supported!"); 
         }
-        if(SystemInfo.supportedRenderTargetCount < 4)
+        if(SystemInfo.supportedRenderTargetCount < 5)
         {
-            Debug.LogError("System cannot support 4 simultaneous render targets!"); 
+            Debug.LogError("System cannot support 5 simultaneous render targets!"); 
+        }
+        if(SystemInfo.graphicsShaderLevel < 50)
+        {
+            Debug.LogError("System only supports shader level: " + SystemInfo.graphicsShaderLevel); 
         }
 
         Debug.Log(SceneManager.GetActiveScene().name); 
@@ -158,7 +162,7 @@ public class RenderOptions : MonoBehaviour
         List<string> names = new List<string>(dict.Keys);
         names.Sort();
         int id = 1;
-
+        visibleObjects.Clear(); 
         foreach (var name in names)
         {
             var visibleObject = dict[name];
@@ -167,11 +171,13 @@ public class RenderOptions : MonoBehaviour
                 visibleObject.GetPropertyBlock(prop);
             prop.SetInt("_ObjectID", id);
             visibleObject.SetPropertyBlock(prop);
+            visibleObjects.Add(visibleObject); 
             ++id;
         }
 
         numVisibleObjects = id - 1;
         Shader.SetGlobalInt("_MaxVisObjects", numVisibleObjects);
+        Shader.SetGlobalInt("WorldPosTextureRes", Screen.width);
 
         names.Insert(0, "none"); 
 
@@ -196,6 +202,11 @@ public class RenderOptions : MonoBehaviour
     public int getNumVisibleObjects()
     {
         return numVisibleObjects; 
+    }
+
+    public List<Renderer> getVisibleObjects()
+    {
+        return visibleObjects; 
     }
 
     private static RenderOptions instance = null;
