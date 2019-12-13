@@ -157,7 +157,7 @@ class UnetRenderer(nn.Module):
 class BlendRenderer(nn.Module): 
     def __init__(self, renderer, input_nc, NOUT, n_layers): 
         super(BlendRenderer, self).__init__()
-        assert(NOUT <= input_nc // n_layers)
+        assert(NOUT < input_nc // n_layers)
         self.nFeatures = input_nc // n_layers
         self.nOUT = NOUT
         self.n_layers = n_layers
@@ -165,15 +165,16 @@ class BlendRenderer(nn.Module):
 
 
     def forward(self, x): 
-        # simple blending, assumes tex_dims = 4
+        # simple front to back blending, assumes tex_dims = 4
         
-        alphaP = x[:, -1:, ...]
-        last = (self.n_layers-1)*self.nFeatures
-        output = x[:, last:last+self.nOUT,...]
-        for d in reversed(range(self.n_layers-1)): 
-            alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*d+self.nOUT+1, ...] 
-            output = (1-alphaP)* output  + alpha * x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...] 
-            alphaP = alpha
+        alpha_in = x[:, self.nOUT:self.nOUT+1, ...].clamp(.001,1.0) #add some alpha bc. textures are initialized as 0 ->output would be 0 
+        #last = (self.n_layers-1)*self.nFeatures
+        output = x[:, 0:self.nOUT,...] * alpha_in
+        for d in range(self.n_layers-1): 
+            alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*d+self.nOUT+1, ...] .clamp(.001,1.0)
+            alpha = (1-alpha_in)*alpha
+            output = output  + alpha * x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...] 
+            alpha_in = alpha_in + alpha
         return output[:, 0:self.nOUT, ...]
 
 class ResidualBlock(nn.Module): 
@@ -410,12 +411,15 @@ class Texture(nn.Module):
         self.n_textures = n_textures
         #self.register_parameter('data', torch.nn.Parameter(torch.randn(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
         #self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.0))
-        self.register_parameter('data', torch.nn.Parameter(torch.zeros(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
+        #self.register_parameter('data', torch.nn.Parameter(torch.zeros(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
+        self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.5))
 
-    def forward(self, uv_inputs, mask_inputs):
+    def forward(self, uv_inputs, mask_inputs, world_positions):
         layers = []
         N, n_layers, H, W =mask_inputs.shape
         _, F, *_ = self.data.shape
+        if(world_positions is not None): 
+            F +=3
 
         for layer in range(n_layers): 
             layer_idx = 2*layer
@@ -423,14 +427,19 @@ class Texture(nn.Module):
             uvs = torch.stack([uv_inputs[:,layer_idx,:,:], uv_inputs[:,layer_idx+1,:,:]], 3)
 
             layer_tex = torch.zeros((N,F,H,W), device=self.device)
+
             objects_in_mask = torch.unique(mask_layer)
             #for texture_id in range(self.n_textures): 
             for texture_id in objects_in_mask: 
                 #background is 0 in mask and has no texture atm
                 mask = mask_layer == texture_id
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
+                if(world_positions is not None): 
+                    wp_sample = torch.nn.functional.grid_sample(world_positions[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
+                    sample = torch.cat([sample,wp_sample], 1)
                 layer_tex = layer_tex + sample * mask.float()
 
+                
             layers.append(layer_tex)
         return torch.cat(layers, 1)
 
@@ -530,9 +539,10 @@ class NeuralRendererModel(BaseModel):
         #self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         self.loss_names = ['G_L1', 'dummy']
         self.loss_dummy = 0
-
+        self.world_positions = None
         self.visual_names = []
         self.nObjects = opt.nObjects
+        self.use_extrinsics = opt.use_extrinsics
         if(opt.isTrain):
             for i in range(1,self.nObjects):
                 self.visual_names.append(str("texture"+str(i)+"_col"))
@@ -549,9 +559,9 @@ class NeuralRendererModel(BaseModel):
 
 
         # load/define networks
-        input_channels = opt.tex_features * opt.num_depth_layers
+        input_channels = opt.tex_features * opt.num_depth_layers 
         if(opt.use_extrinsics):
-            input_channels += 6
+            input_channels += 3 + 3*opt.num_depth_layers
 
         self.netG = define_Renderer(opt.rendererType, input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
@@ -598,7 +608,8 @@ class NeuralRendererModel(BaseModel):
         self.input_mask = input['MASK'].to(self.device)
         self.image_paths = input['paths']
         self.extrinsics = input['extrinsics']
-
+        if(self.world_positions is None and self.use_extrinsics):
+            self.world_positions = input['worldpos'][0].to(self.device)
 
     def sh_Layer(self, tex, extrinsics):
         if self.opt.no_spherical_harmonics:
@@ -614,7 +625,7 @@ class NeuralRendererModel(BaseModel):
                                 ], 1)
 
     def forward(self):
-        self.sampled_texture = self.texture(self.input_uv, self.input_mask)
+        self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions)
 
         #first layer first 3 channels, rgb channels for nth layers will be [:, nFeatures*n:nFeatures*n+1, ...]
         self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]

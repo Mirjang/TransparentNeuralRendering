@@ -88,6 +88,12 @@ class TransparentDataset(BaseDataset):
         self.device = torch.device('cpu')
         print("DataLoader using: " + str(self.device))
 
+        
+        worldPositions = []
+        for i in range(opt.nObjects): 
+            worldPositions += [transforms.ToTensor()(loadRGBAFloatEXR(os.path.join(self.dir_AB, "positions_"+str(i)+".exr"), channel_names=['R', 'G', 'B']))]
+        self.worldPositions = (torch.stack(worldPositions,0) -0.5) * 100 #undo normalisation? 
+
     def __getitem__(self, index):
         #print('GET ITEM: ', index)
         AB_path = self.AB_paths[index]
@@ -181,9 +187,9 @@ class TransparentDataset(BaseDataset):
 
         #################################
 
-        extrinsics = torch.tensor(self.extrinsics[index].astype(np.float32))
+        extrinsics = torch.tensor(self.extrinsics[index].astype(np.float32))[:3,...]
         return {'TARGET': TARGET, 'UV': UV, 'MASK' : MASK,
-                'paths': rgb_path, 'extrinsics' : extrinsics}
+                'paths': rgb_path, 'extrinsics' : extrinsics, 'worldpos': self.worldPositions}
 
     def __len__(self):
         return len(self.AB_paths)

@@ -14,15 +14,15 @@ if __name__ == '__main__':
     dataset_size = len(data_loader)
 
 
-    phase = opt.phase
-    opt.phase = opt.validation_set
-    validation_loader = CreateDataLoader(opt)
-    validation_set = validation_loader.load_data()
-    opt.phase = phase
+   # phase = opt.phase
+   # opt.phase = opt.validation_set
+   # validation_loader = CreateDataLoader(opt)
+   # validation_set = validation_loader.load_data()
+   # opt.phase = phase
 
-    validation_size = len(validation_loader)
+  #  validation_size = len(validation_loader)
     print('#training images = %d' % dataset_size)
-    print('#validation images = %d' % validation_size)
+  #  print('#validation images = %d' % validation_size)
 
     print('#training objects = %d' % opt.nObjects)
 
