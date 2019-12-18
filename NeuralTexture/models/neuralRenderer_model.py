@@ -224,72 +224,14 @@ class PerPixelRenderer(nn.Module):
     def forward(self, x): 
         return self.model(x)
 
-class ConvLSTMCell(nn.Module):
-    
-    def __init__(self, input_size, input_dim, hidden_dim, kernel_size, bias):
-        """
-        Initialize ConvLSTM cell.
-        
-        Parameters
-        ----------
-        input_size: (int, int)
-            Height and width of input tensor as (height, width).
-        input_dim: int
-            Number of channels of input tensor.
-        hidden_dim: int
-            Number of channels of hidden state.
-        kernel_size: (int, int)
-            Size of the convolutional kernel.
-        bias: bool
-            Whether or not to add the bias.
-        """
-
-        super(ConvLSTMCell, self).__init__()
-
-        self.height, self.width = input_size
-        self.input_dim  = input_dim
-        self.hidden_dim = hidden_dim
-
-        self.kernel_size = kernel_size
-        self.padding     = kernel_size[0] // 2, kernel_size[1] // 2
-        self.bias        = bias
-        
-        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
-                              out_channels=4 * self.hidden_dim,
-                              kernel_size=self.kernel_size,
-                              padding=self.padding,
-                              bias=self.bias)
-
-    def forward(self, input_tensor, cur_state):
-        
-        h_cur, c_cur = cur_state
-        
-        combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
-        
-        combined_conv = self.conv(combined)
-        cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1) 
-        i = torch.sigmoid(cc_i)
-        f = torch.sigmoid(cc_f)
-        o = torch.sigmoid(cc_o)
-        g = torch.tanh(cc_g)
-
-        c_next = f * c_cur + i * g
-        h_next = o * torch.tanh(c_next)
-        
-        return h_next, c_next
-
-    def init_hidden(self, batch_size):
-        return (Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda(),
-                Variable(torch.zeros(batch_size, self.hidden_dim, self.height, self.width)).cuda())
-
-class LstmPerPixelRenderer(nn.Module): 
+class RnnPerPixelRenderer(nn.Module): 
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d):
-        super(LstmPerPixelRenderer, self).__init__()
+        super(RnnPerPixelRenderer, self).__init__()
         self.n_layers = opt.num_depth_layers
         self.n_extrinsics = 6 if opt.use_extrinsics else 0 
         self.tex_channels = opt.tex_features
         ngf = opt.ngf
-        
+        self.isLstm = renderer.startswith("Lstm")
 
         ed_blocks = renderer.split("_")
         n_encoder_blocks = int(ed_blocks[1])
@@ -301,8 +243,12 @@ class LstmPerPixelRenderer(nn.Module):
             encoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
 
         self.encoder = nn.Sequential(*encoder)
+        
+        if(self.isLstm):
+            self.recurrent_cell = networks.ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+        else: 
+            self.recurrent_cell = networks.ConvGRUCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
 
-        self.lstm = ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
         self.hidden_dims = (opt.batch_size, ngf, opt.fineSize,opt.fineSize)
         decoder = []
 
@@ -321,7 +267,8 @@ class LstmPerPixelRenderer(nn.Module):
             extrinsics = x[:, :self.n_extrinsics,...]
         x.device
         h = torch.zeros(self.hidden_dims).to(x.device)
-        c = torch.zeros(self.hidden_dims).to(x.device)
+        if(self.isLstm):
+            c = torch.zeros(self.hidden_dims).to(x.device)
 
         for i in reversed(range(self.n_layers)): 
             l = self.n_extrinsics + i * self.tex_channels
@@ -331,14 +278,17 @@ class LstmPerPixelRenderer(nn.Module):
                 x_i = torch.cat([extrinsics, x_i], 1)
 
             x_i = self.encoder(x_i)
-            h, c = self.lstm(x_i, (h,c))
+            if(self.isLstm):
+                h, c = self.recurrent_cell(x_i, (h,c))
+            else: 
+                h = self.recurrent_cell(x_i,h)
 
         return self.decoder(h)
 
 
-class LstmUNETRenderer(nn.Module): 
+class RnnUNETRenderer(nn.Module): 
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d, use_dropout = False):
-        super(LstmUNETRenderer, self).__init__()
+        super(RnnUNETRenderer, self).__init__()
         self.n_layers = opt.num_depth_layers
         self.n_extrinsics = 6 if opt.use_extrinsics else 0 
         self.tex_channels = opt.tex_features
@@ -356,7 +306,11 @@ class LstmUNETRenderer(nn.Module):
 
         self.encoder = nn.Sequential(*encoder)
 
-        self.lstm = ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+        if(renderer.startswith("Lstm")):
+            self.recurrent_cell = networks.ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+        else: 
+            self.recurrent_cell = networks.ConvGRUCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+        
         self.hidden_dims = (opt.batch_size, ngf, opt.fineSize,opt.fineSize)
 
         #def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False):
@@ -398,10 +352,10 @@ def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, i
         net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
     elif(renderer.startswith("Blend")):
         net = BlendRenderer(renderer, n_feature, N_OUT, opt.num_depth_layers)
-    elif(renderer.startswith("LstmPerPixel")):
-        net = LstmPerPixelRenderer(renderer, N_OUT, opt)
-    elif(renderer.startswith("LstmUNET")):
-        net = LstmUNETRenderer(renderer, N_OUT, opt, use_dropout=use_dropout)
+    elif(renderer.startswith("LstmPerPixel") or renderer.startswith("GruPerPixel")):
+        net = RnnPerPixelRenderer(renderer, N_OUT, opt)
+    elif(renderer.startswith("LstmUNET") or renderer.startswith("GruUNET")):
+        net = RnnUNETRenderer(renderer, N_OUT, opt, use_dropout=use_dropout)
     return networks.init_net(net, init_type, init_gain, gpu_ids)
 
 class Texture(nn.Module):
@@ -414,7 +368,7 @@ class Texture(nn.Module):
         #self.register_parameter('data', torch.nn.Parameter(torch.zeros(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
         self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.5))
 
-    def forward(self, uv_inputs, mask_inputs, world_positions):
+    def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics):
         layers = []
         N, n_layers, H, W =mask_inputs.shape
         _, F, *_ = self.data.shape
@@ -436,7 +390,10 @@ class Texture(nn.Module):
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                 if(world_positions is not None): 
                     wp_sample = torch.nn.functional.grid_sample(world_positions[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
-                    sample = torch.cat([sample,wp_sample], 1)
+                    wp_sample = wp_sample - extrinsics
+                    norm = torch.norm(wp_sample, p = 2, dim = 1).detach()
+                    view_dir = wp_sample.div(norm.expand_as(wp_sample))
+                    sample = torch.cat([sample,view_dir], 1)
                 layer_tex = layer_tex + sample * mask.float()
 
                 
@@ -561,7 +518,7 @@ class NeuralRendererModel(BaseModel):
         # load/define networks
         input_channels = opt.tex_features * opt.num_depth_layers 
         if(opt.use_extrinsics):
-            input_channels += 3 + 3*opt.num_depth_layers
+            input_channels += 3*opt.num_depth_layers
 
         self.netG = define_Renderer(opt.rendererType, input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
@@ -584,7 +541,7 @@ class NeuralRendererModel(BaseModel):
             # initialize optimizers
             self.optimizers = []
             if self.trainRenderer:
-                self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=opt.weight_decay)
                 #self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
                 self.optimizers.append(self.optimizer_G)
                 #self.optimizers.append(self.optimizer_D)
@@ -625,7 +582,15 @@ class NeuralRendererModel(BaseModel):
                                 ], 1)
 
     def forward(self):
-        self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions)
+
+        
+        if(self.opt.use_extrinsics): 
+            _,_, H, W = self.input_mask.shape
+
+            extrinsics_layer = self.extrinsics.unsqueeze(2).unsqueeze(3).expand(-1,-1, H,W).to(self.device)
+            self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions, extrinsics_layer)
+        else: 
+            self.sampled_texture = self.texture(self.input_uv, self.input_mask, None, None)
 
         #first layer first 3 channels, rgb channels for nth layers will be [:, nFeatures*n:nFeatures*n+1, ...]
         self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]
@@ -641,11 +606,6 @@ class NeuralRendererModel(BaseModel):
         #self.features = self.sh_Layer(self.sampled_texture, self.extrinsics)
         self.features = self.sampled_texture
 
-        if(self.opt.use_extrinsics): 
-            _,_, H, W = self.input_mask.shape
-
-            extrinsics_layer = self.extrinsics.unsqueeze(2).unsqueeze(3).expand(-1,-1, H,W).to(self.device)
-            self.features = torch.cat([extrinsics_layer, self.features], 1)     
         # mask = self.input_mask == 0
         # self.mask = torch.cat([mask,mask,mask], 1)
         #self.background = torch.where(mask, self.target, torch.zeros_like(self.target))
