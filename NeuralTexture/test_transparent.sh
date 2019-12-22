@@ -20,9 +20,10 @@ LOSS=L1
 
 EPOCH=latest
 
-#source "./experiment_setups/GruPerPixel_2_4_lab3.sh"
-source "./experiment_setups/PerPixel_lab3.sh"
-#source "./experiment_setups/Blend_lab3.sh"
+#source "./experiment_setups/PerPixel2_lab3_vgg.sh"
+#source "./experiment_setups/PerPixel_lab3.sh"
+#source "./experiment_setups/GruPerPixel_lab3.sh"
+source "./experiment_setups/Blend_lab3.sh"
 #source "./experiment_setups/LstmPerPixel_4_4_lab3.sh"
 #source "./experiment_setups/Lstm2UNET3_lab2.sh"
 #source "./experiment_setups/PerLayerPerPixel4_lab2.sh"

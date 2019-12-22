@@ -23,7 +23,7 @@ export MODEL=neuralRenderer
 # texture parameters
 export TEX_DIM=256
 export TEX_FEATURES=8
-export NUM_DEPTH_LAYERS=16
+export NUM_DEPTH_LAYERS=12 # reduce this as much as possible bc. rnns eat um mem like crazy...
 
 export LR=0.001
 
@@ -32,7 +32,7 @@ export LR=0.001
 NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}
 # additional options 
 # OPTIONS=--use_extrinsics
-export OPTIONS="--use_extrinsics --ngf 16"
+export OPTIONS="--use_extrinsics --nref 16 --nrhf 32 --nrdf=256"
 
 # continue training an existing model
 #CONTINUE="--continue_train --epoch_count 47"

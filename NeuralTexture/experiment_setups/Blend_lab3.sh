@@ -19,7 +19,7 @@ export MODEL=neuralRenderer
 # texture parameters
 export TEX_DIM=256
 export TEX_FEATURES=4
-export NUM_DEPTH_LAYERS=16
+export NUM_DEPTH_LAYERS=12
 
 export LR=0.001
 

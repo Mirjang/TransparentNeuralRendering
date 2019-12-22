@@ -155,37 +155,54 @@ class UnetRenderer(nn.Module):
         return self.model(feature_map)
 
 class BlendRenderer(nn.Module): 
-    def __init__(self, renderer, input_nc, NOUT, n_layers): 
+    def __init__(self, renderer, input_nc, NOUT, n_layers, back2front = True): 
         super(BlendRenderer, self).__init__()
         assert(NOUT < input_nc // n_layers)
         self.nFeatures = input_nc // n_layers
         self.nOUT = NOUT
         self.n_layers = n_layers
         self.dummy = nn.Conv2d(1,1,1) # so our optimizer has something to optimize
-
+        self.back2front = back2front
 
     def forward(self, x): 
         # simple front to back blending, assumes tex_dims = 4
         
-        alpha_in = x[:, self.nOUT:self.nOUT+1, ...].clamp(.001,1.0) #add some alpha bc. textures are initialized as 0 ->output would be 0 
-        #last = (self.n_layers-1)*self.nFeatures
-        output = x[:, 0:self.nOUT,...] * alpha_in
-        for d in range(self.n_layers-1): 
-            alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*d+self.nOUT+1, ...] .clamp(.001,1.0)
-            alpha = (1-alpha_in)*alpha
-            output = output  + alpha * x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...] 
-            alpha_in = alpha_in + alpha
-        return output[:, 0:self.nOUT, ...]
+        if(self.back2front):
+            alpha = x[:, -1:, ...].clamp(0,1.0) #add some alpha bc. textures are initialized as 0 ->output would be 0 
+            #last = (self.n_layers-1)*self.nFeatures
+            output = x[:, -(self.nOUT+1):-self.nOUT,...] * alpha
+            for d in reversed(range(self.n_layers-1)): 
+                alpha_in = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*d+self.nOUT+1, ...] .clamp(0,1.0)
+                color = x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...]
+                output = alpha_in * color + ((1-alpha_in)*alpha) *output
+                alpha = alpha_in
+            return output[:, 0:self.nOUT, ...]
+        else: 
+
+            alpha_in = x[:, self.nOUT:self.nOUT+1, ...].clamp(0,1.0) #add some alpha bc. textures are initialized as 0 ->output would be 0 
+            #last = (self.n_layers-1)*self.nFeatures
+            output = x[:, 0:self.nOUT,...] * alpha_in
+            for d in range(self.n_layers-1): 
+                alpha = x[:, self.nFeatures*d+self.nOUT:self.nFeatures*d+self.nOUT+1, ...] .clamp(.001,1.0)
+                alpha = (1-alpha_in)*alpha
+                output = output  + alpha * x[:, self.nFeatures*d:self.nFeatures*d+self.nOUT, ...] 
+                alpha_in = alpha_in + alpha
+            return output[:, 0:self.nOUT, ...]
 
 class ResidualBlock(nn.Module): 
-    def __init__(self, input_nc, inner_nc, output_nc, kernel_size = 1, norm_layer=nn.BatchNorm2d, is_first=False, is_last=False):
+    def __init__(self, input_nc, inner_nc, output_nc, kernel_size = 1, norm_layer=nn.BatchNorm2d, is_first=False, is_last=False, dropout = 0.2):
         super(ResidualBlock, self).__init__()
         
         self.is_outer = is_first or is_last
         model = []
         model += [nn.Conv2d(input_nc, inner_nc, kernel_size=kernel_size, bias=True)]
+        if(dropout>0): 
+            model += [nn.Dropout(dropout)]
+
         model += [nn.ReLU()]
         model += [nn.Conv2d(inner_nc, output_nc, kernel_size=kernel_size, bias=True)]
+        if(dropout>0): 
+            model += [nn.Dropout(dropout)]
         if norm_layer:
             model += [norm_layer(output_nc)]
 
@@ -209,11 +226,42 @@ class PerPixelRenderer(nn.Module):
 
         model = []
         #model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
-        if(use_inout_convs): 
+        if(use_inout_convs and input_nc != ngf): 
             model += [nn.Conv2d(input_nc, ngf, kernel_size=1, stride=1 , bias=True)]
 
-        for i in range(n_blocks): 
+        for _ in range(n_blocks): 
             model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+
+        #model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, is_last=True)]
+        if(use_inout_convs): 
+            model += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
+            model += [nn.Tanh()]
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x): 
+        return self.model(x)
+
+class PerPixel2Renderer(nn.Module): 
+    def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_inout_convs = True):
+        super(PerPixel2Renderer, self).__init__()
+        
+        n_blocks = int(renderer.split("_")[1])
+        
+        norm_layer=None
+
+        model = []
+        #model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
+        if(use_inout_convs and input_nc != ngf): 
+            model += [nn.Conv2d(input_nc, ngf, kernel_size=1, stride=1 , bias=True)]
+
+
+        for _ in range(n_blocks): 
+            model += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+            ngf_next= max(ngf//2, 4)
+
+            model += [nn.Conv2d(ngf, ngf_next, kernel_size=1, stride=1 , bias=True)]
+            model += [nn.ReLU()]
+            ngf = ngf_next
 
         #model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, is_last=True)]
         if(use_inout_convs): 
@@ -230,7 +278,9 @@ class RnnPerPixelRenderer(nn.Module):
         self.n_layers = opt.num_depth_layers
         self.n_extrinsics = 6 if opt.use_extrinsics else 0 
         self.tex_channels = opt.tex_features
-        ngf = opt.ngf
+        ngf = opt.nrhf
+        nref = opt.nref
+        nrdf = opt.nrdf
         self.isLstm = renderer.startswith("Lstm")
 
         ed_blocks = renderer.split("_")
@@ -238,26 +288,25 @@ class RnnPerPixelRenderer(nn.Module):
         n_decoder_blocks = int(ed_blocks[2])
 
         encoder = []
-        encoder += [nn.Conv2d(self.n_extrinsics + opt.tex_features, ngf, kernel_size=1, stride=1, bias=True)]
+        encoder += [nn.Conv2d(self.n_extrinsics + opt.tex_features, nref, kernel_size=1, stride=1, bias=True)]
         for i in range(n_encoder_blocks): 
-            encoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+            encoder += [ResidualBlock(nref, nref, nref, kernel_size=1, norm_layer=norm_layer)]
 
         self.encoder = nn.Sequential(*encoder)
         
         if(self.isLstm):
-            self.recurrent_cell = networks.ConvLSTMCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+            self.recurrent_cell = networks.ConvLSTMCell((opt.fineSize, opt.fineSize), nref, ngf, (1, 1), True)
         else: 
-            self.recurrent_cell = networks.ConvGRUCell((opt.fineSize, opt.fineSize), ngf, ngf, (1, 1), True)
+            self.recurrent_cell = networks.ConvGRUCell((opt.fineSize, opt.fineSize), nref, ngf, (1, 1), True)
 
         self.hidden_dims = (opt.batch_size, ngf, opt.fineSize,opt.fineSize)
         decoder = []
 
-        for i in range(n_decoder_blocks): 
-            decoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
-
-        decoder += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
-
-        decoder += [nn.Tanh()]
+        # for i in range(n_decoder_blocks): 
+        #     decoder += [ResidualBlock(ngf, ngf, ngf, kernel_size=1, norm_layer=norm_layer)]
+        #     ngf = max(16, ngf//2)
+        decoder += [PerPixel2Renderer("PerPixel_"+str(n_decoder_blocks), ngf, output_nc, ngf = nrdf, norm_layer=norm_layer)]
+ 
         self.decoder = nn.Sequential(*decoder)
 
 
@@ -348,6 +397,8 @@ def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, i
 
     if(renderer.startswith("UNET")):
         net = UnetRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif(renderer.startswith("PerPixel2")):
+        net = PerPixel2Renderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
     elif(renderer.startswith("PerPixel")):
         net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
     elif(renderer.startswith("Blend")):
@@ -484,6 +535,7 @@ class NeuralRendererModel(BaseModel):
         if is_train:
             parser.set_defaults(pool_size=0, no_lsgan=True)
             parser.add_argument('--lambda_L1', type=float, default=100.0, help='weight for L1 loss')
+            parser.add_argument('--lambda_VGG', type=float, default=100.0, help='weight for VGG loss')
 
         return parser
 
@@ -494,7 +546,16 @@ class NeuralRendererModel(BaseModel):
         self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         #self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
-        self.loss_names = ['G_L1', 'dummy']
+
+        self.loss_names = []
+        if opt.lossType == 'L1':
+            self.loss_names += ['G_L1']
+        elif opt.lossType == 'VGG':
+            self.loss_names += ['G_VGG']
+        elif opt.lossType == 'all':     
+            self.loss_names += ['G_L1','G_VGG', 'G_total']
+
+        self.loss_names += ['dummy']
         self.loss_dummy = 0
         self.world_positions = None
         self.visual_names = []
@@ -537,10 +598,12 @@ class NeuralRendererModel(BaseModel):
             self.criterionL1 = torch.nn.L1Loss()
             self.criterionL1Smooth = torch.nn.SmoothL1Loss()
             self.criterionL2 = torch.nn.MSELoss()
-
+            if self.opt.lossType == 'VGG' or self.opt.lossType == 'all':
+                self.vgg = VGG16().to(self.device)
             # initialize optimizers
             self.optimizers = []
             if self.trainRenderer:
+            
                 self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=opt.weight_decay)
                 #self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
                 self.optimizers.append(self.optimizer_G)
@@ -696,12 +759,16 @@ class NeuralRendererModel(BaseModel):
        
 
         # Second, G(A) = B
-     #   if self.opt.lossType == 'L1':
-        self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
-        # elif self.opt.lossType == 'VGG':
-        #     self.loss_G_L1 = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_L1 * 0.001 # vgg loss is quite high
-        # else:
-        #     self.loss_G_L1 = fake_weight * self.criterionL2(self.fake, self.target) * self.opt.lambda_L1
+        if self.opt.lossType == 'L1':
+            self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
+        elif self.opt.lossType == 'VGG':
+            self.loss_G_VGG = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_VGG# vgg loss is quite high
+        elif self.opt.lossType == 'all':
+            self.loss_G_L1 = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_L1
+            self.loss_G_VGG= fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_VGG
+            self.loss_G_total = self.loss_G_L1 + self.loss_G_VGG
+        else:
+            self.loss_G_L1 = fake_weight * self.criterionL2(self.fake, self.target) * self.opt.lambda_L1
 
         # col tex loss
         #self.loss_G_L1 += texture_weight * self.criterionL1(self.sampled_texture_col, self.target) * self.opt.lambda_L1
