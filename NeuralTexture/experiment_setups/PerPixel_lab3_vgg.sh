@@ -31,5 +31,5 @@ export NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}
 export OPTIONS="--use_extrinsics --ngf 64 "
 
 # continue training an existing model
-CONTINUE="--weight_decay 1e-2"
+CONTINUE="--weight_decay 1e-2 --lossType all --lambda_L1 100 --lambda_VGG 100"
 # CONTINUE="--continue_train --epoch_count 11"

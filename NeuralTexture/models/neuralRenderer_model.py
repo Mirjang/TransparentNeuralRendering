@@ -433,10 +433,14 @@ class Texture(nn.Module):
 
             layer_tex = torch.zeros((N,F,H,W), device=self.device)
 
-            objects_in_mask = torch.unique(mask_layer)
+            objects_in_mask = torch.unique(mask_layer).detach()
             #for texture_id in range(self.n_textures): 
             for texture_id in objects_in_mask: 
+
                 #background is 0 in mask and has no texture atm
+                if texture_id == 0: # just keep background (void) as zero
+                    continue
+
                 mask = mask_layer == texture_id
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                 if(world_positions is not None): 
@@ -536,6 +540,7 @@ class NeuralRendererModel(BaseModel):
             parser.set_defaults(pool_size=0, no_lsgan=True)
             parser.add_argument('--lambda_L1', type=float, default=100.0, help='weight for L1 loss')
             parser.add_argument('--lambda_VGG', type=float, default=100.0, help='weight for VGG loss')
+            parser.add_argument('--lambda_GAN', type=float, default=100.0, help='weight for GAN loss')
 
         return parser
 
@@ -552,6 +557,8 @@ class NeuralRendererModel(BaseModel):
             self.loss_names += ['G_L1']
         elif opt.lossType == 'VGG':
             self.loss_names += ['G_VGG']
+        elif opt.lossType == 'GAN':
+            self.loss_names += ['G_GAN', 'D_real', 'D_fake']
         elif opt.lossType == 'all':     
             self.loss_names += ['G_L1','G_VGG', 'G_total']
 
@@ -577,11 +584,11 @@ class NeuralRendererModel(BaseModel):
 
 
         # load/define networks
-        input_channels = opt.tex_features * opt.num_depth_layers 
+        self.input_channels = opt.tex_features * opt.num_depth_layers 
         if(opt.use_extrinsics):
-            input_channels += 3*opt.num_depth_layers
+            self.input_channels += 3*opt.num_depth_layers
 
-        self.netG = define_Renderer(opt.rendererType, input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        self.netG = define_Renderer(opt.rendererType, self.input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
 
         # texture
@@ -590,8 +597,11 @@ class NeuralRendererModel(BaseModel):
        
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
-            #self.netD = networks.define_D(opt.tex_features * opt.num_depth_layers + opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
-            #self.fake_AB_pool = ImagePool(opt.pool_size)
+            self.use_gan = self.opt.lossType == 'GAN' or self.opt.lossType == 'all'
+            if self.use_gan:
+                # disc input: uv maps + masks + generator output
+                self.netD = networks.define_D(3 * opt.num_depth_layers + opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
+                self.fake_AB_pool = ImagePool(opt.pool_size)
 
             # define loss functions
             self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan).to(self.device)
@@ -605,9 +615,10 @@ class NeuralRendererModel(BaseModel):
             if self.trainRenderer:
             
                 self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=opt.weight_decay)
-                #self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
                 self.optimizers.append(self.optimizer_G)
-                #self.optimizers.append(self.optimizer_D)
+                if self.use_gan:
+                    self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+                    self.optimizers.append(self.optimizer_D)
 
             self.optimizer_T = torch.optim.Adam(self.texture.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_T)
@@ -630,6 +641,8 @@ class NeuralRendererModel(BaseModel):
         self.extrinsics = input['extrinsics']
         if(self.world_positions is None and self.use_extrinsics):
             self.world_positions = input['worldpos'][0].to(self.device)
+        if self.use_gan: 
+            self.input_d = torch.cat((self.input_uv, self.input_mask.float() / self.nObjects), dim = 1)
 
     def sh_Layer(self, tex, extrinsics):
         if self.opt.no_spherical_harmonics:
@@ -645,8 +658,6 @@ class NeuralRendererModel(BaseModel):
                                 ], 1)
 
     def forward(self):
-
-        
         if(self.opt.use_extrinsics): 
             _,_, H, W = self.input_mask.shape
 
@@ -661,37 +672,22 @@ class NeuralRendererModel(BaseModel):
         # texture0 = background (no uv map)
         for i in range(1,self.nObjects):
             setattr(self,str("texture"+str(i)+"_col"), self.texture.data[i:i+1, 0:3, ...] )
-        # self.texture0_col = self.texture.data[0:1,0:3,:,:]
-        # self.texture1_col = self.texture.data[1:2,0:3,:,:]
-        # self.texture2_col = self.texture.data[2:3,0:3,:,:]
 
         #TODO get extrinsics for SH layer
         #self.features = self.sh_Layer(self.sampled_texture, self.extrinsics)
         self.features = self.sampled_texture
-
-        # mask = self.input_mask == 0
-        # self.mask = torch.cat([mask,mask,mask], 1)
-        #self.background = torch.where(mask, self.target, torch.zeros_like(self.target))
-        #self.features = torch.cat([self.features, self.background], 1)
-
-        #self.background = mask
         self.fake = self.netG(self.features)
-
-
-
-
-
-
 
     def backward_D(self):
         # Fake
         # stop backprop to the generator by detaching fake_B
-        fake_AB = self.fake_AB_pool.query(torch.cat((self.input_uv, self.fake), 1))
+        fake_AB = self.fake_AB_pool.query(torch.cat((self.input_d, self.fake), 1))
+        #print(fake_AB.shape)
         pred_fake = self.netD(fake_AB.detach())
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
 
         # Real
-        real_AB = torch.cat((self.input_uv, self.target), 1)
+        real_AB = torch.cat((self.input_d, self.target), 1)
         pred_real = self.netD(real_AB)
         self.loss_D_real = self.criterionGAN(pred_real, True)
 
@@ -750,25 +746,27 @@ class NeuralRendererModel(BaseModel):
         (fake_weight, texture_weight) = self.computeEpochWeight(epoch)
         fake_weight = 1
         # texture_weight = 1
-
-        # First, G(A) should fake the discriminator
-        # fake_AB = torch.cat((self.input_uv, self.fake), 1)
-        # pred_fake = self.netD(fake_AB)
-        # #self.loss_G_GAN = fake_weight * self.criterionGAN(pred_fake, True) * 0.0#0.1 ##<<<<<
-        # self.loss_G_GAN = fake_weight * self.criterionGAN(pred_fake, True) * 0.01
+        if self.use_gan:
+            #First, G(A) should fake the discriminator
+            fake_AB = torch.cat((self.input_d, self.fake), 1)
+            pred_fake = self.netD(fake_AB)
+            #self.loss_G_GAN = fake_weight * self.criterionGAN(pred_fake, True) * 0.0#0.1 ##<<<<<
+            self.loss_G_GAN = fake_weight * self.criterionGAN(pred_fake, True) * self.opt.lambda_GAN
        
-
         # Second, G(A) = B
         if self.opt.lossType == 'L1':
-            self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
+            self.loss_G_total = self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
         elif self.opt.lossType == 'VGG':
-            self.loss_G_VGG = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_VGG# vgg loss is quite high
+            self.loss_G_total = self.loss_G_VGG = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_VGG# vgg loss is quite high
         elif self.opt.lossType == 'all':
-            self.loss_G_L1 = fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_L1
-            self.loss_G_VGG= fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_VGG
+            self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
+            self.loss_G_VGG= fake_weight * self.criterionVGG(self.fake, self.target) * self.opt.lambda_VGG
             self.loss_G_total = self.loss_G_L1 + self.loss_G_VGG
+        elif self.opt.lossType == 'GAN': 
+            self.loss_G_L1 = fake_weight * self.criterionL1(self.fake, self.target) * self.opt.lambda_L1
+            self.loss_G_total = self.loss_G_L1 + self.loss_G_GAN
         else:
-            self.loss_G_L1 = fake_weight * self.criterionL2(self.fake, self.target) * self.opt.lambda_L1
+            self.loss_G_total = self.loss_G_L1 = fake_weight * self.criterionL2(self.fake, self.target) * self.opt.lambda_L1
 
         # col tex loss
         #self.loss_G_L1 += texture_weight * self.criterionL1(self.sampled_texture_col, self.target) * self.opt.lambda_L1
@@ -795,7 +793,7 @@ class NeuralRendererModel(BaseModel):
             self.regularizerTex += regularizerWeight * torch.mean(torch.pow( self.texture.lowest_level_tex, 2.0 )   ) * lowest_weight
 
         #self.loss_G = self.loss_G_GAN + self.loss_G_L1 + self.regularizerTex
-        self.loss_G = self.loss_G_L1 + self.regularizerTex
+        self.loss_G = self.loss_G_total + self.regularizerTex
 
         if(apply_grad):
             self.loss_G.backward()
@@ -811,13 +809,15 @@ class NeuralRendererModel(BaseModel):
         # self.optimizer_T.step()
         if self.trainRenderer:
             # update Discriminator
-            # self.set_requires_grad(self.netD, True)
-            # self.optimizer_D.zero_grad()
-            # self.backward_D()
-            # self.optimizer_D.step()
+            if self.use_gan:
+        
+                self.set_requires_grad(self.netD, True)
+                self.optimizer_D.zero_grad()
+                self.backward_D()
+                self.optimizer_D.step()
 
-            # # update Generator
-            # self.set_requires_grad(self.netD, False)
+                # # update Generator
+                self.set_requires_grad(self.netD, False)
             self.optimizer_G.zero_grad()
             self.optimizer_T.zero_grad()
 
@@ -829,7 +829,8 @@ class NeuralRendererModel(BaseModel):
         else:
             # update texture
             self.optimizer_T.zero_grad()
-            #self.backward_D()
+            if self.use_gan:
+                self.backward_D()
             self.backward_G(epoch_iter)
             self.optimizer_T.step()
 

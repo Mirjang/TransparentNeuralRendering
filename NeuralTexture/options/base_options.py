@@ -60,6 +60,7 @@ class BaseOptions():
 
         parser.add_argument('--hierarchicalTex', action='store_true', help='if specified, hierachical neural textures are used')
 
+        parser.add_argument('--dropout_rate', type=float, default=0, help='dropout')
 
         parser.add_argument('--use_extrinsics', action='store_true', help='add camera extrinsics to NN input')
 

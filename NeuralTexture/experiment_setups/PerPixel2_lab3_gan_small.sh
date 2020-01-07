@@ -11,7 +11,7 @@ export DATASET_MODE=transparent
 
 
 # network used for rendering 
-export RENDERER_TYPE=PerPixel_16
+export RENDERER_TYPE=PerPixel2_4
 
 # models -- for simple blending use debug
 export MODEL=neuralRenderer
@@ -19,17 +19,16 @@ export MODEL=neuralRenderer
 
 # texture parameters
 export TEX_DIM=256
-export TEX_FEATURES=8
+export TEX_FEATURES=16
 export NUM_DEPTH_LAYERS=16
 
 export LR=0.001
 
 
 # #experiment name
-export NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}
+export NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}_gan
 # additional options 
-export OPTIONS="--use_extrinsics --ngf 64 "
+export OPTIONS="--use_extrinsics --ngf 256 "
 
 # continue training an existing model
-CONTINUE="--weight_decay 1e-2"
-# CONTINUE="--continue_train --epoch_count 11"
+CONTINUE="--weight_decay 1e-3 --lossType GAN --lambda_L1 100 --lambda_GAN 100" # --continue_train --epoch_count 216"

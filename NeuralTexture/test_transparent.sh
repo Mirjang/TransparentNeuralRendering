@@ -12,7 +12,7 @@ LR=0.001
 shCH_SIZE=1
 
  #GPU
-GPU_ID="2"
+GPU_ID="0"
 
  #display params
 DISP_FREQ=50
@@ -20,10 +20,11 @@ LOSS=L1
 
 EPOCH=latest
 
-#source "./experiment_setups/PerPixel2_lab3_vgg.sh"
+#source "./experiment_setups/PerPixel_lab3_vgg.sh"
+source "./experiment_setups/PerPixel2_lab3_vgg.sh"
 #source "./experiment_setups/PerPixel_lab3.sh"
 #source "./experiment_setups/GruPerPixel_lab3.sh"
-source "./experiment_setups/Blend_lab3.sh"
+#source "./experiment_setups/Blend_lab3.sh"
 #source "./experiment_setups/LstmPerPixel_4_4_lab3.sh"
 #source "./experiment_setups/Lstm2UNET3_lab2.sh"
 #source "./experiment_setups/PerLayerPerPixel4_lab2.sh"
