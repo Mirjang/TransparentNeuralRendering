@@ -547,7 +547,7 @@ class NeuralRendererModel(BaseModel):
     def initialize(self, opt):
         BaseModel.initialize(self, opt)
         self.isTrain = opt.isTrain
-        self.trainRenderer = True
+        self.trainRenderer = opt.isTrain
         self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         #self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
@@ -558,7 +558,7 @@ class NeuralRendererModel(BaseModel):
         elif opt.lossType == 'VGG':
             self.loss_names += ['G_VGG']
         elif opt.lossType == 'GAN':
-            self.loss_names += ['G_GAN', 'D_real', 'D_fake']
+            self.loss_names += ['G_GAN', 'G_L1', 'D_real', 'D_fake']
         elif opt.lossType == 'all':     
             self.loss_names += ['G_L1','G_VGG', 'G_total']
 
@@ -594,10 +594,10 @@ class NeuralRendererModel(BaseModel):
         # texture
         
         self.texture = define_Texture(self.nObjects, opt.tex_features, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
-       
+        self.use_gan = self.opt.lossType == 'GAN' or self.opt.lossType == 'all'
+
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
-            self.use_gan = self.opt.lossType == 'GAN' or self.opt.lossType == 'all'
             if self.use_gan:
                 # disc input: uv maps + masks + generator output
                 self.netD = networks.define_D(3 * opt.num_depth_layers + opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
@@ -639,7 +639,7 @@ class NeuralRendererModel(BaseModel):
         self.input_mask = input['MASK'].to(self.device)
         self.image_paths = input['paths']
         self.extrinsics = input['extrinsics']
-        if(self.world_positions is None and self.use_extrinsics):
+        if self.world_positions is None and self.use_extrinsics:
             self.world_positions = input['worldpos'][0].to(self.device)
         if self.use_gan: 
             self.input_d = torch.cat((self.input_uv, self.input_mask.float() / self.nObjects), dim = 1)
@@ -746,7 +746,8 @@ class NeuralRendererModel(BaseModel):
         (fake_weight, texture_weight) = self.computeEpochWeight(epoch)
         fake_weight = 1
         # texture_weight = 1
-        if self.use_gan:
+        self.loss_G_GAN = torch.zeros([1]).float().to(self.device)
+        if self.use_gan and epoch > self.opt.suspend_gan_epochs:
             #First, G(A) should fake the discriminator
             fake_AB = torch.cat((self.input_d, self.fake), 1)
             pred_fake = self.netD(fake_AB)

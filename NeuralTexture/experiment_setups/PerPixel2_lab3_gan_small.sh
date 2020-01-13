@@ -31,4 +31,4 @@ export NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}_gan
 export OPTIONS="--use_extrinsics --ngf 256 "
 
 # continue training an existing model
-CONTINUE="--weight_decay 1e-3 --lossType GAN --lambda_L1 100 --lambda_GAN 100" # --continue_train --epoch_count 216"
+CONTINUE="--weight_decay 1e-3 --lossType GAN --lambda_L1 100 --lambda_GAN 100 --suspend_gan_epochs 1" # --continue_train --epoch_count 216"

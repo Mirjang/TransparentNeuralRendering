@@ -21,7 +21,9 @@ LOSS=L1
 EPOCH=latest
 
 #source "./experiment_setups/PerPixel_lab3_vgg.sh"
-source "./experiment_setups/PerPixel2_lab3_vgg.sh"
+#source "./experiment_setups/PerPixel2_lab3_vgg.sh"
+source "./experiment_setups/PerPixel2_lab3_vgg_small.sh"
+#source "./experiment_setups/PerPixel2_lab3_gan_small.sh"
 #source "./experiment_setups/PerPixel_lab3.sh"
 #source "./experiment_setups/GruPerPixel_lab3.sh"
 #source "./experiment_setups/Blend_lab3.sh"
