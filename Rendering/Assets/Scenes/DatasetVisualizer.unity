@@ -187,15 +187,15 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1234058922783496159, guid: b8bd499bd9fb8af4eb4f29091e644227,
+    - target: {fileID: 1234058922453620820, guid: b8bd499bd9fb8af4eb4f29091e644227,
         type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1234058922453620820, guid: b8bd499bd9fb8af4eb4f29091e644227,
+    - target: {fileID: 1234058922783496159, guid: b8bd499bd9fb8af4eb4f29091e644227,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8bd499bd9fb8af4eb4f29091e644227, type: 3}
@@ -445,13 +445,16 @@ MonoBehaviour:
   numFrames: 0
   startFrame: 2
   numDepthPeelLayers: 8
+  startDepthLayer: 0
   experiment_name: sphere_mv_bg
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
-  renderUVOpaque: 0
   renderTransparent: 1
+  renderWorldPos: 1
+  deleteDirIfExists: 0
+  framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
   frameIdCounter: 0
@@ -499,8 +502,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   files:
-  - C:\Users\Patrick\Desktop\NeuralTexture\TransparentNeuralRendering\Datasets\scene0\train\
-  - C:\Users\Patrick\Desktop\NeuralTexture\TransparentNeuralRendering\Datasets\scene0\test\
+  - D:\datasets\lab3\train\
+  - D:\datasets\lab3\test\
   indicators:
   - {fileID: 5454705035396600405, guid: 401cdc779bb2db7499e9ea7c0a0b3f56, type: 3}
   - {fileID: 6097456589818731350, guid: bbb081215a7baea49ad16d0386d1059b, type: 3}

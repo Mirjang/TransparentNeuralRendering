@@ -156,13 +156,14 @@ MonoBehaviour:
   numFrames: 5000
   startFrame: 2
   numDepthPeelLayers: 8
-  experiment_name: lab3
+  startDepthLayer: 0
+  experiment_name: lab3_testi
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
-  renderUVOpaque: 0
   renderTransparent: 1
+  renderWorldPos: 1
   deleteDirIfExists: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
@@ -393,12 +394,15 @@ MonoBehaviour:
   minAngleX: -30
   maxAngleX: 80
   centerRadius: {x: 0, y: 0, z: 0}
-  saveImages: 1
-  actionOnFinish: 1
+  smoothPath: 1
+  smoothSpeed: 2.5
+  smoothYSteps: 20
+  saveImages: 0
+  actionOnFinish: 0
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   lookAtTarget: {fileID: 1067380337}
-  useDebugSphere: 0
+  useDebugSphere: 1
   debugSphere: {fileID: 5454705035396600405, guid: 401cdc779bb2db7499e9ea7c0a0b3f56,
     type: 3}
 --- !u!4 &1067380337

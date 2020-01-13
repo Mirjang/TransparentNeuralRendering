@@ -156,15 +156,15 @@ MonoBehaviour:
   globalAlpha: 0.5
   numFrames: 400
   startFrame: 2
-  numDepthPeelLayers: 4
-  startDepthLayer: 0
+  numDepthPeelLayers: 16
+  startDepthLayer: 8
   experiment_name: lab3_wposwtf
   outputDir: 
   isTrainSet: 0
   logOutputVerbose: 0
   renderRGBUnity: 0
-  renderTransparent: 0
-  renderWorldPos: 1
+  renderTransparent: 1
+  renderWorldPos: 0
   deleteDirIfExists: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
