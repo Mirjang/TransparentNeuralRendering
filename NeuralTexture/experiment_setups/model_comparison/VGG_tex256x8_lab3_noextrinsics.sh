@@ -21,7 +21,7 @@ export NUM_DEPTH_LAYERS=16
 
 # #experiment name
 # additional options 
-export OPTIONS="--lossType all --lambda_L1 100 --lambda_VGG 200 --use_extrinsics"
+export OPTIONS="--lossType all --lambda_L1 100 --lambda_VGG 200"
 
 # continue training an existing model
 #CONTINUE="--continue_train --epoch_count 81"

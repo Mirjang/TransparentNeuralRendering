@@ -7,9 +7,6 @@ export DATA=lab3
 # choose between EXR and PNG loader
 export DATASET_MODE=transparent
 
-# number of objects in scene + 1 (background)
-export NUM_OBJECTS=7
-
 
 # models -- for simple blending use debug
 export MODEL=neuralRenderer
@@ -21,7 +18,7 @@ export NUM_DEPTH_LAYERS=16
 
 # #experiment name
 # additional options 
-export OPTIONS="--lossType all --lambda_L1 100 --lambda_VGG 200 --use_extrinsics"
+export OPTIONS=--use_extrinsics
 
 # continue training an existing model
 #CONTINUE="--continue_train --epoch_count 81"

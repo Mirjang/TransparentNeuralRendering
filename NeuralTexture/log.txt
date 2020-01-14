@@ -1,0 +1,66 @@
+----------------- Options ---------------
+             aspect_ratio: 1.0                           
+               batch_size: 1                             
+          checkpoints_dir: /mnt/raid/patrickradner/cmp_arch/checkpoints	[default: ./checkpoints]
+                 dataroot: /mnt/raid/patrickradner/datasets/lab3	[default: None]
+             dataset_mode: transparent                   	[default: aligned]
+                direction: AtoB                          
+          display_winsize: 512                           	[default: 256]
+             dropout_rate: 0                             
+                    epoch: latest                        
+                     eval: False                         
+                 fineSize: 512                           
+             fix_renderer: False                         
+                  gpu_ids: 2                             	[default: 0]
+          hierarchicalTex: False                         
+                init_gain: 0.02                          
+                init_type: xavier                        
+                 input_nc: 3                             
+                  isTrain: False                         	[default: None]
+                 loadSize: 512                           
+                load_iter: 0                             	[default: 0]
+                 lossType: L1                            
+         max_dataset_size: inf                           
+                    model: neuralRenderer                	[default: test]
+                 nObjects: 1                             
+               n_layers_D: 3                             
+                     name: PerPixel2_4_lab3_tex256x8     	[default: experiment_name]
+                      ndf: 64                            
+                     netD: basic                         
+                     netG: unet_256                      
+                      ngf: 64                            
+          no_augmentation: False                         
+               no_dropout: False                         
+            no_extrinsics: False                         
+                     norm: batch                         	[default: instance]
+                     nrdf: 64                            
+                     nref: 32                            
+                     nrhf: 64                            
+                    ntest: inf                           
+         num_depth_layers: 16                            	[default: 8]
+                 num_test: 50                            
+              num_threads: 2                             
+                output_nc: 3                             
+                    phase: test                          
+                 renderer: no_renderer                   
+             rendererType: PerPixel2_4                   	[default: UNET_5_level]
+           resize_or_crop: resize_and_crop               
+              results_dir: /mnt/raid/patrickradner/cmp_arch/results	[default: ./results/]
+           serial_batches: False                         
+                   suffix:                               
+       suspend_gan_epochs: 0                             
+                  tex_dim: 256                           	[default: 512]
+             tex_features: 8                             	[default: 16]
+           use_extrinsics: True                          	[default: False]
+  use_spherical_harmonics: False                         
+                  verbose: False                         
+----------------- End -------------------
+DataLoader using: cpu
+dataset [TransparentDataset] was created
+#test images = 419
+#test objects = 9
+>>> create model <<<
+initialize network with xavier
+model [NeuralRendererModel] was created
+>>> setup model <<<
+loading the module from /mnt/raid/patrickradner/cmp_arch/checkpoints/PerPixel2_4_lab3_tex256x8/latest_netG.pth

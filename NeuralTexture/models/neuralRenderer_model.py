@@ -276,7 +276,7 @@ class RnnPerPixelRenderer(nn.Module):
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d):
         super(RnnPerPixelRenderer, self).__init__()
         self.n_layers = opt.num_depth_layers
-        self.n_extrinsics = 6 if opt.use_extrinsics else 0 
+        self.n_extrinsics = 1 if opt.use_spherical_harmonics else 3 if opt.use_extrinsics else 0
         self.tex_channels = opt.tex_features
         ngf = opt.nrhf
         nref = opt.nref
@@ -339,7 +339,7 @@ class RnnUNETRenderer(nn.Module):
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d, use_dropout = False):
         super(RnnUNETRenderer, self).__init__()
         self.n_layers = opt.num_depth_layers
-        self.n_extrinsics = 6 if opt.use_extrinsics else 0 
+        self.n_extrinsics = 1 if opt.use_spherical_harmonics else 3 if opt.use_extrinsics else 0
         self.tex_channels = opt.tex_features
         ngf = opt.ngf
         
@@ -419,41 +419,59 @@ class Texture(nn.Module):
         #self.register_parameter('data', torch.nn.Parameter(torch.zeros(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
         self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.5))
 
-    def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics):
+    def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics, extrinsics_type=None):
         layers = []
         N, n_layers, H, W =mask_inputs.shape
         _, F, *_ = self.data.shape
-        if(world_positions is not None): 
-            F +=3
 
+        if extrinsics_type: 
+            F += 3
+        
         for layer in range(n_layers): 
             layer_idx = 2*layer
             mask_layer = mask_inputs[:,layer,:,:]
             uvs = torch.stack([uv_inputs[:,layer_idx,:,:], uv_inputs[:,layer_idx+1,:,:]], 3)
-
             layer_tex = torch.zeros((N,F,H,W), device=self.device)
-
             objects_in_mask = torch.unique(mask_layer).detach()
             #for texture_id in range(self.n_textures): 
             for texture_id in objects_in_mask: 
-
                 #background is 0 in mask and has no texture atm
                 if texture_id == 0: # just keep background (void) as zero
                     continue
 
                 mask = mask_layer == texture_id
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
-                if(world_positions is not None): 
+               
+                if extrinsics_type: 
                     wp_sample = torch.nn.functional.grid_sample(world_positions[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                     wp_sample = wp_sample - extrinsics
                     norm = torch.norm(wp_sample, p = 2, dim = 1).detach()
                     view_dir = wp_sample.div(norm.expand_as(wp_sample))
                     sample = torch.cat([sample,view_dir], 1)
                 layer_tex = layer_tex + sample * mask.float()
-
-                
+            if extrinsics_type == "SH": 
+                assert(F>11) # we need 8 channels for SH + 3 extrinsics channels + at least 1 texture channel 
+                layer_sh = layer_tex[:, :8,...]
+                layer_extrinsics = layer_tex[:, 8:11, ...]
+                print(layer_extrinsics.shape)
+                sh = self.sh_Layer(layer_sh, layer_extrinsics)
+                sh = torch.sum(sh, dim = 1)
+                layer_tex = torch.cat([layer_tex[:, 11:, ...], sh])
+                print(sh.shape)
+                print(layer_tex.shape)
             layers.append(layer_tex)
         return torch.cat(layers, 1)
+
+    def sh_Layer(self, tex, extrinsics):
+          
+        viewDir = [extrinsics[0][2], extrinsics[1][2], extrinsics[2][2]  ]
+        basis = torch.from_numpy(spherical_harmonics_basis(viewDir)).to(self.device)
+        return torch.cat([  tex[:,0:3,:,:],
+                            basis[0] * tex[:,3+0:3+1,:,:], 
+                            basis[1] * tex[:,3+1:3+2,:,:], basis[2] * tex[:,3+2:3+3,:,:], basis[3] * tex[:,3+3:3+4,:,:], 
+                            basis[4] * tex[:,3+4:3+5,:,:], basis[5] * tex[:,3+5:3+6,:,:], basis[6] * tex[:,3+6:3+7,:,:], basis[7] * tex[:,3+7:3+8,:,:], basis[8] * tex[:,3+8:3+9,:,:],
+                            tex[:,12:,:,:]
+                            ], 1)
 
 class HierarchicalTexture(nn.Module):
     def __init__(self, n_textures, n_features, dimensions, device):
@@ -585,15 +603,19 @@ class NeuralRendererModel(BaseModel):
 
         # load/define networks
         self.input_channels = opt.tex_features * opt.num_depth_layers 
-        if(opt.use_extrinsics):
+        if(opt.use_spherical_harmonics): 
+            self.input_channels += 1*opt.num_depth_layers 
+        elif(opt.use_extrinsics):
             self.input_channels += 3*opt.num_depth_layers
 
         self.netG = define_Renderer(opt.rendererType, self.input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
 
         # texture
-        
-        self.texture = define_Texture(self.nObjects, opt.tex_features, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
+        ntf = opt.tex_features
+        if opt.use_spherical_harmonics: 
+            ntf += 8
+        self.texture = define_Texture(self.nObjects, ntf, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
         self.use_gan = self.opt.lossType == 'GAN' or self.opt.lossType == 'all'
 
         if self.isTrain:
@@ -639,30 +661,33 @@ class NeuralRendererModel(BaseModel):
         self.input_mask = input['MASK'].to(self.device)
         self.image_paths = input['paths']
         self.extrinsics = input['extrinsics']
-        if self.world_positions is None and self.use_extrinsics:
+        if self.world_positions is None:
             self.world_positions = input['worldpos'][0].to(self.device)
         if self.use_gan: 
             self.input_d = torch.cat((self.input_uv, self.input_mask.float() / self.nObjects), dim = 1)
 
     def sh_Layer(self, tex, extrinsics):
-        if self.opt.no_spherical_harmonics:
-            return tex
-        else:
-            viewDir = [extrinsics[0][2], extrinsics[1][2], extrinsics[2][2]  ]
-            basis = torch.from_numpy(spherical_harmonics_basis(viewDir)).to(self.device)
-            return torch.cat([  tex[:,0:3,:,:],
-                                basis[0] * tex[:,3+0:3+1,:,:], 
-                                basis[1] * tex[:,3+1:3+2,:,:], basis[2] * tex[:,3+2:3+3,:,:], basis[3] * tex[:,3+3:3+4,:,:], 
-                                basis[4] * tex[:,3+4:3+5,:,:], basis[5] * tex[:,3+5:3+6,:,:], basis[6] * tex[:,3+6:3+7,:,:], basis[7] * tex[:,3+7:3+8,:,:], basis[8] * tex[:,3+8:3+9,:,:],
-                                tex[:,12:,:,:]
-                                ], 1)
+      
+        viewDir = [extrinsics[0][2], extrinsics[1][2], extrinsics[2][2]  ]
+        basis = torch.from_numpy(spherical_harmonics_basis(viewDir)).to(self.device)
+        return torch.cat([  tex[:,0:3,:,:],
+                            basis[0] * tex[:,3+0:3+1,:,:], 
+                            basis[1] * tex[:,3+1:3+2,:,:], basis[2] * tex[:,3+2:3+3,:,:], basis[3] * tex[:,3+3:3+4,:,:], 
+                            basis[4] * tex[:,3+4:3+5,:,:], basis[5] * tex[:,3+5:3+6,:,:], basis[6] * tex[:,3+6:3+7,:,:], basis[7] * tex[:,3+7:3+8,:,:], basis[8] * tex[:,3+8:3+9,:,:],
+                            tex[:,12:,:,:]
+                            ], 1)
 
     def forward(self):
-        if(self.opt.use_extrinsics): 
+        if self.opt.use_spherical_harmonics:
             _,_, H, W = self.input_mask.shape
 
             extrinsics_layer = self.extrinsics.unsqueeze(2).unsqueeze(3).expand(-1,-1, H,W).to(self.device)
-            self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions, extrinsics_layer)
+            self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions, extrinsics_layer, extrinsics_type="SH")
+        elif self.opt.use_extrinsics: 
+            _,_, H, W = self.input_mask.shape
+
+            extrinsics_layer = self.extrinsics.unsqueeze(2).unsqueeze(3).expand(-1,-1, H,W).to(self.device)
+            self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions, extrinsics_layer, extrinsics_type="DIR")
         else: 
             self.sampled_texture = self.texture(self.input_uv, self.input_mask, None, None)
 

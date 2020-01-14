@@ -61,11 +61,12 @@ class BaseOptions():
         parser.add_argument('--hierarchicalTex', action='store_true', help='if specified, hierachical neural textures are used')
 
         parser.add_argument('--dropout_rate', type=float, default=0, help='dropout')
+        parser.add_argument('--no_extrinsics', action='store_true', help='does nothing but explicitly mark that no extrinsics are used')
 
         parser.add_argument('--use_extrinsics', action='store_true', help='add camera extrinsics to NN input')
         parser.add_argument('--suspend_gan_epochs', type=int, default=0, help='only start gan loss after n epochs to stabilize training')
 
-        parser.add_argument('--no_spherical_harmonics', action='store_true', help='if specified, no sh layers are used')
+        parser.add_argument('--use_spherical_harmonics', action='store_true', help='if specified, sh layers are used')
 
         self.initialized = True
         return parser
