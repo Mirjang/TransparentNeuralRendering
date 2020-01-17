@@ -604,13 +604,14 @@ MonoBehaviour:
   numFrames: 0
   startFrame: 2
   numDepthPeelLayers: 8
-  experiment_name: debug
+  startDepthLayer: 0
+  experiment_name: tree
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
-  renderUVOpaque: 0
   renderTransparent: 1
+  renderWorldPos: 1
   deleteDirIfExists: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
@@ -1624,6 +1625,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1791724363723391783, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1791724363723391783, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1791724363723391783, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 1234058923536528423, guid: b8bd499bd9fb8af4eb4f29091e644227,
         type: 3}

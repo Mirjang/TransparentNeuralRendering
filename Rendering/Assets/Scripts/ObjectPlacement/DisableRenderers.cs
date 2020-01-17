@@ -27,7 +27,7 @@ public class DisableRenderers : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (disableSelf)
+        if (disableSelf && GetComponent<Renderer>())
         {
             GetComponent<Renderer>().enabled = true;
         }
@@ -47,7 +47,7 @@ public class DisableRenderers : MonoBehaviour
     void disableRenderers()
     {
         
-        if (disableSelf)
+        if (disableSelf && GetComponent<Renderer>())
         {
             GetComponent<Renderer>().enabled = false;
         }
@@ -57,7 +57,7 @@ public class DisableRenderers : MonoBehaviour
             r.enabled = false; 
         }
 
-        if (!disableSelf) //GetComponentsInChildren also returns self?  
+        if (!disableSelf && GetComponent<Renderer>()) //GetComponentsInChildren also returns self?  
         {
             GetComponent<Renderer>().enabled = true;
         }
