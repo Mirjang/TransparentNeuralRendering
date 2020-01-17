@@ -18,12 +18,15 @@ public class RenderOptions : MonoBehaviour
     
     public int numFrames = 1;
     public int startFrame = 2;
+    public enum ActionOnFinish { None, Exit, LoadScene };
+
+    public ActionOnFinish actionOnFinish = ActionOnFinish.Exit;
 
     public int numDepthPeelLayers = 8;
     public int startDepthLayer = 0;
 
-    public string experiment_name = ""; 
-
+    public string experiment_name = "";
+    public string phase_name = ""; 
     public string outputDir = "";
     public bool isTrainSet = true; 
     public bool logOutputVerbose = true; 
@@ -31,8 +34,8 @@ public class RenderOptions : MonoBehaviour
     public bool renderRGBUnity = true;
     public bool renderTransparent = true;
     public bool renderWorldPos = true; 
-    public bool deleteDirIfExists = false; 
-
+    public bool deleteDirIfExists = false;
+    public int maxActiveWriteThreads = 1; 
     public int framesSinceStart = 0; 
     public Material default_t;
 
@@ -49,23 +52,26 @@ public class RenderOptions : MonoBehaviour
         {
             experiment_name = SceneManager.GetActiveScene().name + "_" + System.DateTime.Now.ToString("yyyy-MM-ddTHH-mm-ss"); 
         }
+        if (phase_name == "")
+        {
+            phase_name = (isTrainSet ? "train" : "test");
+        }
         if (outputDir == "")
         {
-            if(Application.platform == RuntimePlatform.LinuxPlayer)
+
+            if (Application.platform == RuntimePlatform.LinuxPlayer)
             {
-                outputDir = Application.dataPath + "/mnt/raid/patrickradner/datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
+                outputDir = Application.dataPath + "/mnt/raid/patrickradner/datasets/" + experiment_name + "/" + phase_name + "/";
             }
             else
-            {
-                
-                outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
-                outputDir = "D:\\datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
-
+            {                
+                //outputDir = Application.dataPath + "/../../Datasets/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/");
+                outputDir = "D:\\datasets/" + experiment_name + "/" + phase_name + "/";
             }
         }
         else
         {
-            outputDir = outputDir + "/" + experiment_name + "/" + (isTrainSet ? "train/" : "test/"); 
+            outputDir = outputDir + "/" + experiment_name + "/" + phase_name + "/";
         }
         parseOptionsFromFile();
 
@@ -142,6 +148,11 @@ public class RenderOptions : MonoBehaviour
 
     }
 
+    //private void OnDestroy()
+    //{
+    //    OutputManager.getInstance().flushAll();     
+    //}
+
     private void assignIDtoObjects(bool continueDataset = false)
     {
 
@@ -213,6 +224,43 @@ public class RenderOptions : MonoBehaviour
     public static RenderOptions getInstance()
     {
         return instance;
+    }
+
+
+    public void OnSceneFinish()
+    {
+      //  OutputManager.getInstance().flushAll();
+
+
+        if (actionOnFinish == ActionOnFinish.Exit)
+        {
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+         Application.Quit();
+#endif
+        }
+
+        if (actionOnFinish == ActionOnFinish.LoadScene)
+        {
+            if (SceneManager.GetActiveScene().buildIndex + 1 < SceneManager.sceneCountInBuildSettings)
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+            }
+            else
+            {
+#if UNITY_EDITOR
+                // Application.Quit() does not work in the editor so
+                // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+         Application.Quit();
+#endif
+            }
+        }
+
     }
 
 }

@@ -155,16 +155,19 @@ MonoBehaviour:
   globalAlpha: 0.5
   numFrames: 4000
   startFrame: 2
-  numDepthPeelLayers: 10
+  actionOnFinish: 1
+  numDepthPeelLayers: 8
   startDepthLayer: 0
   experiment_name: tree
+  phase_name: 
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
   renderTransparent: 1
-  renderWorldPos: 1
-  deleteDirIfExists: 1
+  renderWorldPos: 0
+  deleteDirIfExists: 0
+  maxActiveWriteThreads: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
@@ -398,7 +401,6 @@ MonoBehaviour:
   smoothSpeed: 2.5
   smoothYSteps: 20
   saveImages: 1
-  actionOnFinish: 1
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   lookAtTarget: {fileID: 1067380337}

@@ -21,7 +21,7 @@ public class OfflineFilmingCamera : MonoBehaviour
     private Queue<Vector3> positions = new Queue<Vector3>();
     private Queue<Quaternion> rotations = new Queue<Quaternion>();
     public bool recording = false;
-
+    public bool writing = false; 
     private float lastFrameTime; 
 
 
@@ -73,11 +73,18 @@ public class OfflineFilmingCamera : MonoBehaviour
             recording = !recording;
         }
 
+
+
         if(Input.GetKeyDown(KeyCode.Escape))
         {
             recording = false;
             positions.Clear();
             rotations.Clear(); 
+        }
+
+        if(positions.Count > 0 && !recording && Input.GetKeyDown(KeyCode.F1))
+        {
+            writing = true; 
         }
 
         if (recordingIndicator)
@@ -86,7 +93,7 @@ public class OfflineFilmingCamera : MonoBehaviour
         }
         if (writeIndicator)
         {
-            writeIndicator.SetActive(positions.Count > 0 && !recording);
+            writeIndicator.SetActive(writing);
         }
         if(frames)
         {
@@ -106,7 +113,7 @@ public class OfflineFilmingCamera : MonoBehaviour
         }
 
 
-        if(positions.Count > 0 && !recording) // just store one imaage per frame, so the programm doesnt freeze up completely
+        if(positions.Count > 0 && writing) // just store one imaage per frame, so the programm doesnt freeze up completely
         {
 
             var pos = positions.Dequeue();
@@ -114,6 +121,8 @@ public class OfflineFilmingCamera : MonoBehaviour
             transform.position = pos;
             transform.rotation = rot;
             recordingCamera.RenderImage(writeImages);
+            if (positions.Count == 0)
+                writing = false; 
 
         }
 

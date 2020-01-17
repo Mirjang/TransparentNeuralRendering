@@ -100,8 +100,8 @@ public class CustomRender : MonoBehaviour
             DisableRenderers.disableAllRenderers(); 
 
 
-            colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
-            uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+            //colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+            //uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
 
             cam.backgroundColor = new Color(1, 1, 1, 1);
             clearTexture(depthBuffer); 
@@ -193,13 +193,14 @@ public class CustomRender : MonoBehaviour
 
     private void OnDestroy()
     {
-
-        for (int i = 0; i < worldPositions.Length; ++i)
+        if(RenderOptions.getInstance().renderWorldPos)
         {
-            outputTexture(worldPositions[i], "positions_" + i);
+            for (int i = 0; i < worldPositions.Length; ++i)
+            {
+                outputTexture(worldPositions[i], "positions_" + i);
+            }
+            Debug.Log("Wrote worldpositions");
         }
-        Debug.Log("Wrote worldpositions");
-       
     }
 
     private void outputTexture(RenderTexture rt, string name)
@@ -254,10 +255,11 @@ public class CustomRender : MonoBehaviour
     private void writeTextureToEXR(RenderTexture rt, string name)
     {
         Texture2D tex = getFloatTextureFormRenderTexture(rt);
+       // OutputManager.getInstance().writeTextureEXR(name, tex);
         var blob = tex.EncodeToEXR(Texture2D.EXRFlags.OutputAsFloat | RenderOptions.getInstance().exrCompression);
         string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + name + ".exr";
         File.WriteAllBytes(filename, blob);
-        if(RenderOptions.getInstance().logOutputVerbose)
+        if (RenderOptions.getInstance().logOutputVerbose)
             Debug.Log("Wrote: " + filename);
 
         Destroy(tex);

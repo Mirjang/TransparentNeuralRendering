@@ -19,9 +19,7 @@ public class SampleImages : MonoBehaviour
     public float smoothSpeed = 50f;
     public float smoothYSteps = 15.0f; 
     public bool saveImages = true;
-    public enum ActionOnFinish { None, Exit, LoadScene };
 
-    public ActionOnFinish actionOnFinish = ActionOnFinish.Exit;
     public GameObject camPrefab;
     public Transform lookAtTarget;
 
@@ -57,37 +55,9 @@ public class SampleImages : MonoBehaviour
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
-        if (frameCounter >= RenderOptions.getInstance().numFrames)
+        if (RenderOptions.getInstance().frameIdCounter >= RenderOptions.getInstance().numFrames)
         {
-            if (actionOnFinish == ActionOnFinish.Exit)
-            {
-#if UNITY_EDITOR
-                // Application.Quit() does not work in the editor so
-                // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
-                UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
-#endif
-            }
-
-            if (actionOnFinish == ActionOnFinish.LoadScene)
-            {
-                if (SceneManager.GetActiveScene().buildIndex + 1 < SceneManager.sceneCountInBuildSettings)
-                {
-                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
-                }
-                else
-                {
-#if UNITY_EDITOR
-                    // Application.Quit() does not work in the editor so
-                    // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
-                    UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
-#endif
-                }
-            }
-
+            RenderOptions.getInstance().OnSceneFinish(); 
             return;
         }
 
