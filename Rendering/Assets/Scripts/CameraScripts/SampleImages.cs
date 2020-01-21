@@ -55,8 +55,9 @@ public class SampleImages : MonoBehaviour
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
-        if (RenderOptions.getInstance().frameIdCounter >= RenderOptions.getInstance().numFrames)
+        if (frameCounter >= RenderOptions.getInstance().numFrames)
         {
+            Debug.Log("done"); 
             RenderOptions.getInstance().OnSceneFinish(); 
             return;
         }

@@ -38,7 +38,7 @@ public class RenderOptions : MonoBehaviour
     public int maxActiveWriteThreads = 1; 
     public int framesSinceStart = 0; 
     public Material default_t;
-
+    public bool savePoses = true; 
     private int numVisibleObjects;
 
     private List<Renderer> visibleObjects = new List<Renderer>(); 
@@ -94,11 +94,14 @@ public class RenderOptions : MonoBehaviour
         {
             var pose_file = outputDir + "camera_pose.txt";
 
-            if (deleteDirIfExists || ! System.IO.File.Exists(pose_file))
+            if (deleteDirIfExists || !System.IO.File.Exists(pose_file))
             {
                 System.IO.Directory.Delete(outputDir, true);
                 System.IO.Directory.CreateDirectory(outputDir);
 
+            }
+            else if (GameObject.FindObjectOfType<RenderFromFileMultiProcessing>() != null)
+            {
             }
             else
             {
@@ -114,8 +117,8 @@ public class RenderOptions : MonoBehaviour
                 framesSinceStart = nPrevFrames;
 
                 Debug.Log("Continuing exitsing dataset: " + nPrevFrames + "/" + numFrames); 
-
             }
+
         }
         else
         {
