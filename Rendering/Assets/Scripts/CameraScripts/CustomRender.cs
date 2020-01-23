@@ -31,14 +31,23 @@ public class CustomRender : MonoBehaviour
     private RenderTexture[] uvBuffers;
 
     private RenderTexture[] worldPositions;
-    private RenderTexture dumpRT; 
+    private RenderTexture dumpRT;
+    public GameObject boxProxy; 
+    private List<RandomPositionAssignment> rndPosScripts = new List<RandomPositionAssignment>(); 
+
     // Start is called before the first frame update
     void Start()
     {
         cam = GetComponent<Camera>();
-        cameraID = RenderOptions.getInstance().getIncrementalCameraId(); 
+        cameraID = RenderOptions.getInstance().getIncrementalCameraId();
         //blendMat = new Material(blendShader); unused
-
+        foreach(var script in FindObjectsOfType<RandomPositionAssignment>())
+        {
+            if (script.enabled)
+            {
+                rndPosScripts.Add(script); 
+            }
+        }
 
         colorBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
         uvBuffers = new RenderTexture[RenderOptions.getInstance().numDepthPeelLayers];
@@ -77,6 +86,9 @@ public class CustomRender : MonoBehaviour
     public void RenderImage(bool write = true)
     {
         RenderTexture rgb = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+
+        foreach (var script in rndPosScripts)
+            script.PreRender(); 
 
         if (RenderOptions.getInstance().renderRGBUnity)
         {
@@ -138,6 +150,19 @@ public class CustomRender : MonoBehaviour
             //var r = cam.transform.rotation.eulerAngles / 360;
             var r = cam.transform.forward.normalized;
             string camPoseStr = cam.transform.position.x + " " + cam.transform.position.y + " " + cam.transform.position.z + " " + r.x + " " + r.y + " " + r.z + "\n";
+
+            if(rndPosScripts.Count>0)
+            {
+                string objPoseStr = ""; 
+                foreach(var renderer in RenderOptions.getInstance().getVisibleObjects())
+                {
+                    objPoseStr += renderer.gameObject.transform.position.x + " " + renderer.gameObject.transform.position.y + " " + renderer.gameObject.transform.position.z + " "
+                        + renderer.gameObject.transform.rotation.eulerAngles.x + " " + renderer.gameObject.transform.rotation.eulerAngles.y + " " + renderer.gameObject.transform.rotation.eulerAngles.z+ " ";
+                }
+                objPoseStr += "\n"; 
+                File.AppendAllText(RenderOptions.getInstance().outputDir + "object_pose.txt", objPoseStr);
+            }
+
             File.AppendAllText(RenderOptions.getInstance().outputDir + "camera_pose.txt", camPoseStr);
 
             for (int i = 0; i < RenderOptions.getInstance().numDepthPeelLayers; i++)
@@ -254,8 +279,9 @@ public class CustomRender : MonoBehaviour
 
     private void writeTextureToEXR(RenderTexture rt, string name)
     {
+        
         Texture2D tex = getFloatTextureFormRenderTexture(rt);
-       // OutputManager.getInstance().writeTextureEXR(name, tex);
+        //OutputManager.getInstance().writeTextureEXR(name, tex);
         var blob = tex.EncodeToEXR(Texture2D.EXRFlags.OutputAsFloat | RenderOptions.getInstance().exrCompression);
         string filename = RenderOptions.getInstance().outputDir /*+ cameraID.ToString() + "_"*/ + name + ".exr";
         File.WriteAllBytes(filename, blob);

@@ -603,9 +603,11 @@ MonoBehaviour:
   globalAlpha: 0.5
   numFrames: 0
   startFrame: 2
+  actionOnFinish: 1
   numDepthPeelLayers: 8
   startDepthLayer: 0
-  experiment_name: tree
+  experiment_name: debug
+  phase_name: a
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
@@ -613,6 +615,7 @@ MonoBehaviour:
   renderTransparent: 1
   renderWorldPos: 1
   deleteDirIfExists: 1
+  maxActiveWriteThreads: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0

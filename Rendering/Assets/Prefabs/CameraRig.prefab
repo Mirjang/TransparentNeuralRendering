@@ -94,6 +94,8 @@ MonoBehaviour:
   initShader: {fileID: 4800000, guid: 51fac7cc409fcb6448444fa341645985, type: 3}
   worldPosShader: {fileID: 4800000, guid: 7a0539d1e1b03ed43999b085d5c6e7ea, type: 3}
   display: {fileID: 0}
+  boxProxy: {fileID: 1552939456066522348, guid: e1908badf00a69c4db91234e5f33fd2d,
+    type: 3}
 --- !u!1 &330699099216524511
 GameObject:
   m_ObjectHideFlags: 0

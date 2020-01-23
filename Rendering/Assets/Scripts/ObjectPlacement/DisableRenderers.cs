@@ -7,12 +7,27 @@ public class DisableRenderers : MonoBehaviour
 {
 
     public bool disableSelf = false;
-
+    public bool useBoundingBox = false; 
 
     public GameObject proxy;
 
+   
+
     private void Awake()
     {
+        if(useBoundingBox)
+        {
+            if (GetComponent<BoxCollider>() == null)
+                gameObject.AddComponent<BoxCollider>(); 
+
+            Debug.Assert(proxy == null);
+            proxy = Instantiate(FindObjectOfType<CustomRender>().boxProxy, transform.position, transform.rotation, transform);
+            proxy.GetComponent<ProxyCube>().SetDims(GetComponent<BoxCollider>().bounds.extents);
+            proxy.transform.localScale *= 0.25f;
+            Debug.Log(GetComponent<BoxCollider>().bounds.extents);
+        }
+
+
         if (proxy)
         {
             proxy.name = gameObject.name + "_proxy"; 

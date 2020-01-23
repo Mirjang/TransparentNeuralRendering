@@ -154,11 +154,13 @@ MonoBehaviour:
   exrCompression: 2
   useCustomGlobalAlpha: 0
   globalAlpha: 0.5
-  numFrames: 400
+  numFrames: 5000
   startFrame: 2
+  actionOnFinish: 1
   numDepthPeelLayers: 16
   startDepthLayer: 8
-  experiment_name: lab3_wposwtf
+  experiment_name: lab3
+  phase_name: uv_train_random_distance
   outputDir: 
   isTrainSet: 0
   logOutputVerbose: 0
@@ -166,6 +168,7 @@ MonoBehaviour:
   renderTransparent: 1
   renderWorldPos: 0
   deleteDirIfExists: 1
+  maxActiveWriteThreads: 4
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
   camerIDCounter: 0
@@ -196,7 +199,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ce30f37123e99f4685fede3db442ebe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  file: {fileID: 4900000, guid: a75622ff834e49d45811f37ef7fe1bc1, type: 3}
+  file: {fileID: 4900000, guid: 900ad4403b1b33045aada58372aa30ab, type: 3}
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   poses: []
@@ -545,6 +548,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalPosition.y
       value: 1.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 8087758038504227742, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8443948131620163394, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_Name
+      value: default
+      objectReference: {fileID: 0}
+    - target: {fileID: 1690143021619404382, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8bd499bd9fb8af4eb4f29091e644227, type: 3}

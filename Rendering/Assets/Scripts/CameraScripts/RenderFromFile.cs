@@ -42,36 +42,7 @@ public class RenderFromFile : MonoBehaviour
         //there should only be one of these objects in the scene, taking all the frames and then quitting
         if (frameCounter >= poses.Length)
         {
-
-            if (actionOnFinish == ActionOnFinish.Exit)
-            {
-#if UNITY_EDITOR
-                // Application.Quit() does not work in the editor so
-                // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
-                UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
-#endif
-            }
-
-            if (actionOnFinish == ActionOnFinish.LoadScene)
-            {
-                if (SceneManager.GetActiveScene().buildIndex + 1 < SceneManager.sceneCountInBuildSettings)
-                {
-                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
-                }
-                else
-                {
-#if UNITY_EDITOR
-                    // Application.Quit() does not work in the editor so
-                    // UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
-                    UnityEditor.EditorApplication.isPlaying = false;
-#else
-         Application.Quit();
-#endif
-                }
-            }
-            
+            RenderOptions.getInstance().OnSceneFinish();         
             return;
         }
         else
