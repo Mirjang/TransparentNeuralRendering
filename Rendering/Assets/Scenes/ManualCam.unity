@@ -618,6 +618,7 @@ MonoBehaviour:
   maxActiveWriteThreads: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
+  drawProxysInRgbFrame: 1
   camerIDCounter: 0
   frameIdCounter: 0
 --- !u!4 &482896724

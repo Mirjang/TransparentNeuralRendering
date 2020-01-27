@@ -4,14 +4,17 @@ using System.Collections;
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 public class ProxyCube : MonoBehaviour
-{ 
+{
+    private bool dimsSet = false; 
     void Start()
     {
-        SetDims(Vector3.one); 
+        if(!dimsSet)
+            SetDims(Vector3.one); 
     }
 
-    public void SetDims(Vector3 extent)
+    public void SetDims(Vector3 dims)
     {
+        dimsSet = true; 
         float size = 1f;
 
         Vector3[] vertices = {
@@ -38,8 +41,8 @@ public class ProxyCube : MonoBehaviour
 
         for (int i = 0; i < vertices.Length; ++i)
         {
-            vertices[i] -= new Vector3(size, size, size) / 2;
-            vertices[i].Scale(extent); 
+            vertices[i].Scale(dims);
+            vertices[i] -= dims / 2;
         }
 
         int[] triangles = {

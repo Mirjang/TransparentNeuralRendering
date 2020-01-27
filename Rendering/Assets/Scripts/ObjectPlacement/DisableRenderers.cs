@@ -18,12 +18,13 @@ public class DisableRenderers : MonoBehaviour
         if(useBoundingBox)
         {
             if (GetComponent<BoxCollider>() == null)
-                gameObject.AddComponent<BoxCollider>(); 
-
+                gameObject.AddComponent<BoxCollider>();
             Debug.Assert(proxy == null);
             proxy = Instantiate(FindObjectOfType<CustomRender>().boxProxy, transform.position, transform.rotation, transform);
-            proxy.GetComponent<ProxyCube>().SetDims(GetComponent<BoxCollider>().bounds.extents);
-            proxy.transform.localScale *= 0.25f;
+
+            proxy.GetComponent<ProxyCube>().SetDims(GetComponent<BoxCollider>().bounds.extents*2);
+           
+            proxy.transform.localScale = new Vector3(1 / transform.localScale.x, 1 / transform.localScale.y, 1 / transform.localScale.z); 
             Debug.Log(GetComponent<BoxCollider>().bounds.extents);
         }
 
@@ -54,7 +55,7 @@ public class DisableRenderers : MonoBehaviour
 
         if (proxy)
         {
-            proxy.GetComponent<Renderer>().enabled = false;
+            proxy.GetComponent<Renderer>().enabled = RenderOptions.getInstance().drawProxysInRgbFrame;
         }
 
     }

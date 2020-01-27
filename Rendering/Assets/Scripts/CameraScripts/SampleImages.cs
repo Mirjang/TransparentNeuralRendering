@@ -39,8 +39,10 @@ public class SampleImages : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
         cam = Instantiate(camPrefab);
         render = cam.GetComponentInChildren<CustomRender>();
+        
         smoothAngX = minAngleX;
         smoothAngY = minAngleY;
         smoothPathStartTime = Time.time; 
@@ -55,7 +57,7 @@ public class SampleImages : MonoBehaviour
             return; 
         }
         //there should only be one of these objects in the scene, taking all the frames and then quitting
-        if (RenderOptions.getInstance().frameIdCounter >= RenderOptions.getInstance().numFrames)
+        if (frameCounter >= RenderOptions.getInstance().numFrames)
         {
             RenderOptions.getInstance().OnSceneFinish(); 
             return;

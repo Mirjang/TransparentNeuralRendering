@@ -38,7 +38,7 @@ public class RenderOptions : MonoBehaviour
     public int maxActiveWriteThreads = 1; 
     public int framesSinceStart = 0; 
     public Material default_t;
-
+    public bool drawProxysInRgbFrame = false; 
     private int numVisibleObjects;
 
     private List<Renderer> visibleObjects = new List<Renderer>(); 
