@@ -109,8 +109,8 @@ public class CustomRender : MonoBehaviour
         if (RenderOptions.getInstance().renderTransparent)
         {
             //disable unnecessary renderers and enable proxy renderer if present
-            DisableRenderers.disableAllRenderers(); 
-
+            DisableRenderers.disableAllRenderers();
+            AddSkybox.setAllEnabled(false); 
 
             //colorBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
             //uvBuffers[0] = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
@@ -212,7 +212,8 @@ public class CustomRender : MonoBehaviour
 
         }
 
-        rgb.Release(); 
+        rgb.Release();
+        AddSkybox.setAllEnabled(true);
 
     }
 

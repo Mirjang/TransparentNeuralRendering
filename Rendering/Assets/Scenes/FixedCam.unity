@@ -153,13 +153,13 @@ MonoBehaviour:
   exrCompression: 2
   useCustomGlobalAlpha: 0
   globalAlpha: 0.5
-  numFrames: 5000
+  numFrames: 2500
   startFrame: 2
   actionOnFinish: 1
-  numDepthPeelLayers: 16
+  numDepthPeelLayers: 6
   startDepthLayer: 0
-  experiment_name: lab3
-  phase_name: train_random_positions
+  experiment_name: fencecar
+  phase_name: train
   outputDir: 
   isTrainSet: 1
   logOutputVerbose: 0
@@ -170,6 +170,7 @@ MonoBehaviour:
   maxActiveWriteThreads: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
+  drawProxysInRgbFrame: 0
   camerIDCounter: 0
   frameIdCounter: 0
 --- !u!4 &482896724
@@ -400,7 +401,7 @@ MonoBehaviour:
   smoothPath: 0
   smoothSpeed: 2.5
   smoothYSteps: 20
-  saveImages: 1
+  saveImages: 0
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   lookAtTarget: {fileID: 1067380337}
@@ -415,7 +416,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1067380335}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.11, y: 4.61, z: -1.79}
+  m_LocalPosition: {x: -3.08, y: 6.54, z: -3.07}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -593,15 +594,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1234058923536528422, guid: b8bd499bd9fb8af4eb4f29091e644227,
-        type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1238269490373061115, guid: b8bd499bd9fb8af4eb4f29091e644227,
         type: 3}
       propertyPath: m_LocalPosition.y
       value: 1.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 7255483940879761050, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: switchDelayFrames
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1234058923536528422, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5852592985779149867, guid: b8bd499bd9fb8af4eb4f29091e644227,
         type: 3}
@@ -687,11 +693,6 @@ PrefabInstance:
         type: 3}
       propertyPath: poses.Array.data[0]
       value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 7255483940879761050, guid: b8bd499bd9fb8af4eb4f29091e644227,
-        type: 3}
-      propertyPath: switchDelayFrames
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8bd499bd9fb8af4eb4f29091e644227, type: 3}

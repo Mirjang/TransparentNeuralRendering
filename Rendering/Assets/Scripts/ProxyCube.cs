@@ -9,12 +9,12 @@ public class ProxyCube : MonoBehaviour
     void Start()
     {
         if(!dimsSet)
-            SetDims(Vector3.one); 
+          SetDims(Vector3.one); 
     }
 
-    public void SetDims(Vector3 dims)
+    public void SetDims(Vector3 dims, bool setDims = true)
     {
-        dimsSet = true; 
+        dimsSet = setDims; 
         float size = 1f;
 
         Vector3[] vertices = {
@@ -42,7 +42,7 @@ public class ProxyCube : MonoBehaviour
         for (int i = 0; i < vertices.Length; ++i)
         {
             vertices[i].Scale(dims);
-            vertices[i] -= dims / 2;
+            vertices[i] -= dims / 2.0f;
         }
 
         int[] triangles = {

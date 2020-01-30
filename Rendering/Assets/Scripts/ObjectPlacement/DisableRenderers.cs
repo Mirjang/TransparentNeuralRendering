@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+[RequireComponent(typeof(BoxCollider))]
 public class DisableRenderers : MonoBehaviour
 {
 
@@ -17,15 +17,18 @@ public class DisableRenderers : MonoBehaviour
     {
         if(useBoundingBox)
         {
-            if (GetComponent<BoxCollider>() == null)
-                gameObject.AddComponent<BoxCollider>();
+            //if (GetComponent<BoxCollider>() == null)
+            //    gameObject.AddComponent<BoxCollider>();
             Debug.Assert(proxy == null);
-            proxy = Instantiate(FindObjectOfType<CustomRender>().boxProxy, transform.position, transform.rotation, transform);
+            proxy = Instantiate(FindObjectOfType<CustomRender>().boxProxy, transform.parent);
 
             proxy.GetComponent<ProxyCube>().SetDims(GetComponent<BoxCollider>().bounds.extents*2);
-           
-            proxy.transform.localScale = new Vector3(1 / transform.localScale.x, 1 / transform.localScale.y, 1 / transform.localScale.z); 
-            Debug.Log(GetComponent<BoxCollider>().bounds.extents);
+            proxy.transform.localPosition = transform.localPosition; 
+            //proxy.transform.localScale = new Vector3(1 / transform.localScale.x, 1 / transform.localScale.y, 1 / transform.localScale.z);
+            //proxy.transform.position = GetComponent<BoxCollider>().center; 
+            Debug.Log(GetComponent<BoxCollider>().bounds.center);
+            Debug.Log(transform.position);
+            Debug.Log(proxy.transform.position); 
         }
 
 
