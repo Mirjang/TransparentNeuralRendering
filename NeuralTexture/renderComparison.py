@@ -13,7 +13,7 @@ def main():
         dirs = f.readlines()
         print("comparing: " + str(dirs))
 
-        nhf = len(dirs)
+        nhf = len(dirs)+1
         if(len(sys.argv) > 2): 
             nhf = int(sys.argv[2])
         out_file = str(sys.argv[1]) + ".avi"
@@ -50,7 +50,8 @@ def main():
             im = cv2.imread(os.path.join(diri, str(i) + "_rgb_target.png"))
             display = cv2.hconcat([display, im])
             layers.append(display)
-            display = cv2.vconcat(layers)
+            if len(layers)>1: 
+                display = cv2.vconcat(layers)
 
             if(writer == None): 
                 dims = display.shape[1], display.shape[0]

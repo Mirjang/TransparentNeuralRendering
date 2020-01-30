@@ -8,6 +8,7 @@ import torch
 import numpy as np
 from PIL import Image
 import time
+import re
 
 from util.video_output import VideoOutput
 
@@ -26,6 +27,13 @@ def save_tensor_image(input_image, image_path):
 
 if __name__ == '__main__':
     opt = TestOptions().parse()
+
+    if opt.id_mapping: 
+        print(opt.id_mapping)
+        id_mapping = list(opt.id_mapping.split(","))
+        opt.id_mapping = list(map(int, id_mapping)) 
+        print("using mapping: " + str(opt.id_mapping))
+
     # hard-code some parameters for test
     opt.num_threads = 1   # test code only supports num_threads = 1
     opt.batch_size = 1    # test code only supports batch_size = 1
@@ -39,6 +47,7 @@ if __name__ == '__main__':
     print('#test images = %d' % dataset_size)
     print('#test objects = %d' % opt.nObjects)
 
+    video = True
 
     print('>>> create model <<<')
     model = create_model(opt)
@@ -51,8 +60,8 @@ if __name__ == '__main__':
     web_dir = os.path.join(opt.results_dir, opt.name, '%s_%s' % (opt.phase, opt.epoch))
     webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
 
-
-    video_output = VideoOutput(opt)
+    if video: 
+        video_output = VideoOutput(opt)
 
     sum_time = 0
     total_runs = dataset_size
@@ -84,14 +93,18 @@ if __name__ == '__main__':
 
         visuals = model.get_current_visuals()
         img_path = model.get_image_paths()
-        if i % 5 == 0:
+        if i % 10 == 0:
+            print(opt.name + ":")
             print('processing (%04d)-th image... %s' % (i, img_path))
             
         save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
-        video_output.writeFrame(visuals)
+        if video: 
+            video_output.writeFrame(visuals)
 
 
     print('mean eval time: ', (sum_time / (total_runs - warm_up)))
-    video_output.close()
+    if video: 
+        video_output.close()
     # save the website
     webpage.save()
+    print("DONE: " + opt.name)

@@ -15,7 +15,7 @@ BATCH_SIZE=1
 #RENDERER=MultiTarget-neuralRenderer_200
 RENDERER=no_renderer
 # GPU
-GPU_ID="1"
+GPU_ID="2"
 
 # display params
 DISP_FREQ=100

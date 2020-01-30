@@ -14,7 +14,7 @@ export NUM_OBJECTS=7
 
 
 # network used for rendering 
-export RENDERER_TYPE=PerPixel_4
+export RENDERER_TYPE=PerPixel2_4
 
 # models -- for simple blending use debug
 export MODEL=neuralRenderer

@@ -410,7 +410,7 @@ def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, i
     return networks.init_net(net, init_type, init_gain, gpu_ids)
 
 class Texture(nn.Module):
-    def __init__(self, n_textures, n_features, dimensions, device):
+    def __init__(self, n_textures, n_features, dimensions, device, id_mapping):
         super(Texture, self).__init__()
         self.device = device
         self.n_textures = n_textures
@@ -418,6 +418,7 @@ class Texture(nn.Module):
         #self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.0))
         #self.register_parameter('data', torch.nn.Parameter(torch.zeros(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True)))
         self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.5))
+        self.id_mapping = id_mapping
 
     def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics, extrinsics_type=None):
         layers = []
@@ -435,10 +436,13 @@ class Texture(nn.Module):
             objects_in_mask = torch.unique(mask_layer).detach()
             #for texture_id in range(self.n_textures): 
             for texture_id in objects_in_mask: 
+
+                if self.id_mapping: 
+                    texture_id = self.id_mapping[texture_id]
+
                 #background is 0 in mask and has no texture atm
                 if texture_id == 0: # just keep background (void) as zero
                     continue
-
                 mask = mask_layer == texture_id
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                
@@ -503,8 +507,8 @@ class HierarchicalTexture(nn.Module):
         return high_level + medium_level + low_level + lowest_level
 
 
-def define_Texture(n_textures, n_features, dimensions, device, gpu_ids=[]):
-    tex = Texture(n_textures, n_features, dimensions, device)
+def define_Texture(n_textures, n_features, dimensions, device, gpu_ids=[], id_mapping = None):
+    tex = Texture(n_textures, n_features, dimensions, device, id_mapping)
 
     # if len(gpu_ids) > 0:
     #     assert(torch.cuda.is_available())
@@ -556,9 +560,9 @@ class NeuralRendererModel(BaseModel):
         #parser.set_defaults(dataset_mode='aligned')
         if is_train:
             parser.set_defaults(pool_size=0, no_lsgan=True)
-            parser.add_argument('--lambda_L1', type=float, default=100.0, help='weight for L1 loss')
-            parser.add_argument('--lambda_VGG', type=float, default=100.0, help='weight for VGG loss')
-            parser.add_argument('--lambda_GAN', type=float, default=100.0, help='weight for GAN loss')
+        parser.add_argument('--lambda_L1', type=float, default=100.0, help='weight for L1 loss')
+        parser.add_argument('--lambda_VGG', type=float, default=100.0, help='weight for VGG loss')
+        parser.add_argument('--lambda_GAN', type=float, default=100.0, help='weight for GAN loss')
 
         return parser
 
@@ -615,7 +619,7 @@ class NeuralRendererModel(BaseModel):
         ntf = opt.tex_features
         if opt.use_spherical_harmonics: 
             ntf += 8
-        self.texture = define_Texture(self.nObjects, ntf, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids)
+        self.texture = define_Texture(self.nObjects, ntf, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids, id_mapping = opt.id_mapping)
         self.use_gan = self.opt.lossType == 'GAN' or self.opt.lossType == 'all'
 
         if self.isTrain:
@@ -661,7 +665,7 @@ class NeuralRendererModel(BaseModel):
         self.input_mask = input['MASK'].to(self.device)
         self.image_paths = input['paths']
         self.extrinsics = input['extrinsics']
-        if self.world_positions is None:
+        if self.world_positions is None or self.opt.update_world_pos:
             self.world_positions = input['worldpos'][0].to(self.device)
         if self.use_gan: 
             self.input_d = torch.cat((self.input_uv, self.input_mask.float() / self.nObjects), dim = 1)

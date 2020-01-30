@@ -1,3 +1,0 @@
-./results/neuralRenderer_PerPixel_4_lab2_tex256x8x7/test_latest/images/
-./results/neuralRenderer_LstmPerPixel_4_lab2_tex256x8x7/test_latest/images/
-./results/neuralRenderer_LstmUNET_2_3_lab2_tex256x8x7/test_latest/images/

@@ -9,6 +9,8 @@ from PIL import Image
 import OpenEXR
 import glob
 from util.exr import channels_to_ndarray
+from util.util import eulerAnglesToRotationMatrix
+import cv2
 
 #for loading binary data
 # def make_dataset(dir):
@@ -32,13 +34,8 @@ from util.exr import channels_to_ndarray
 
 def make_dataset(dir, opt):
     paths = [] 
-
-
-
     assert os.path.isdir(dir), '%s is not a valid directory' % dir
 
-
-    
     with open(os.path.join(dir, "object_names.txt")) as objnames: 
         opt.nObjects  = len(objnames.readlines())
 
@@ -87,13 +84,21 @@ class TransparentDataset(BaseDataset):
         #self.device = torch.device('cuda:{}'.format(opt.gpu_ids[0])) if opt.gpu_ids else torch.device('cpu')
         self.device = torch.device('cpu')
         print("DataLoader using: " + str(self.device))
-
-        
+        opt.update_world_pos = False
+        self.update_world_pos = False
+        self.nObjects = opt.nObjects 
         worldPositions = []
         for i in range(opt.nObjects): 
             worldPositions += [transforms.ToTensor()(loadRGBAFloatEXR(os.path.join(self.dir_AB, "positions_"+str(i)+".exr"), channel_names=['R', 'G', 'B']))]
         self.worldPositions = (torch.stack(worldPositions,0) -0.5) * 100 #undo normalisation? 
 
+        pose_path = os.path.join(self.dir_AB, "object_pose.txt")
+        if os.path.exists(pose_path): 
+            print("Found custom pose file, assuming positions given in local coords")
+            opt.update_world_pos = True 
+            self.update_world_pos = True
+            poses = np.loadtxt(pose_path)
+            self.poses = np.reshape(poses, (-1, opt.nObjects - 1, 6))
     def __getitem__(self, index):
         #print('GET ITEM: ', index)
         AB_path = self.AB_paths[index]
@@ -102,7 +107,7 @@ class TransparentDataset(BaseDataset):
 
         assert(len(uv_paths) >= self.opt.num_depth_layers), "len(uv_paths) !>= num_depth_layers"
         # default image dimensions
-
+        
 
         # load image data
         #assert(IMG_DIM == self.opt.fineSize)
@@ -186,10 +191,20 @@ class TransparentDataset(BaseDataset):
 
 
         #################################
-
+        if self.update_world_pos: 
+            world_positions = self.worldPositions.clone().detach().numpy()
+            _, _, W, H = world_positions.shape
+            for i in range(1, self.nObjects-1): 
+                pose = self.poses[index, i-1]
+                r = eulerAnglesToRotationMatrix(np.deg2rad(pose[3:6]))
+                t = pose[:3, np.newaxis]
+                world_positions[i] = (np.dot(r, world_positions[i].reshape(3, -1)) + t).reshape(3,W,H)
+            wp = torch.tensor(world_positions)
+        else: 
+            wp = self.worldPositions
         extrinsics = torch.tensor(self.extrinsics[index].astype(np.float32))[:3,...]
-        return {'TARGET': TARGET, 'UV': UV, 'MASK' : MASK,
-                'paths': rgb_path, 'extrinsics' : extrinsics, 'worldpos': self.worldPositions}
+        return {'TARGET': TARGET, 'UV': UV, 'MASK': MASK,
+                'paths': rgb_path, 'extrinsics' : extrinsics, 'worldpos': wp}
 
     def __len__(self):
         return len(self.AB_paths)
