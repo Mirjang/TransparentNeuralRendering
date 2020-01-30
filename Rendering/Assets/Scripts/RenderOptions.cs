@@ -38,7 +38,7 @@ public class RenderOptions : MonoBehaviour
     public int maxActiveWriteThreads = 1; 
     public int framesSinceStart = 0; 
     public Material default_t;
-
+    public bool drawProxysInRgbFrame = false; 
     private int numVisibleObjects;
 
     private List<Renderer> visibleObjects = new List<Renderer>(); 
@@ -148,10 +148,10 @@ public class RenderOptions : MonoBehaviour
 
     }
 
-    //private void OnDestroy()
-    //{
-    //    OutputManager.getInstance().flushAll();     
-    //}
+    private void OnDestroy()
+    {
+        OutputManager.getInstance().flushAll();
+    }
 
     private void assignIDtoObjects(bool continueDataset = false)
     {
@@ -229,7 +229,7 @@ public class RenderOptions : MonoBehaviour
 
     public void OnSceneFinish()
     {
-      //  OutputManager.getInstance().flushAll();
+        OutputManager.getInstance().flushAll();
 
 
         if (actionOnFinish == ActionOnFinish.Exit)

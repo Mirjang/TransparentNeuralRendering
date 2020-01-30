@@ -2,17 +2,36 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+[RequireComponent(typeof(BoxCollider))]
 public class DisableRenderers : MonoBehaviour
 {
 
     public bool disableSelf = false;
-
+    public bool useBoundingBox = false; 
 
     public GameObject proxy;
 
+   
+
     private void Awake()
     {
+        if(useBoundingBox)
+        {
+            //if (GetComponent<BoxCollider>() == null)
+            //    gameObject.AddComponent<BoxCollider>();
+            Debug.Assert(proxy == null);
+            proxy = Instantiate(FindObjectOfType<CustomRender>().boxProxy, transform.parent);
+
+            proxy.GetComponent<ProxyCube>().SetDims(GetComponent<BoxCollider>().bounds.extents*2);
+            proxy.transform.localPosition = transform.localPosition; 
+            //proxy.transform.localScale = new Vector3(1 / transform.localScale.x, 1 / transform.localScale.y, 1 / transform.localScale.z);
+            //proxy.transform.position = GetComponent<BoxCollider>().center; 
+            Debug.Log(GetComponent<BoxCollider>().bounds.center);
+            Debug.Log(transform.position);
+            Debug.Log(proxy.transform.position); 
+        }
+
+
         if (proxy)
         {
             proxy.name = gameObject.name + "_proxy"; 
@@ -39,7 +58,7 @@ public class DisableRenderers : MonoBehaviour
 
         if (proxy)
         {
-            proxy.GetComponent<Renderer>().enabled = false;
+            proxy.GetComponent<Renderer>().enabled = RenderOptions.getInstance().drawProxysInRgbFrame;
         }
 
     }

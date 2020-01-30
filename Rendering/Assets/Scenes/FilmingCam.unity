@@ -234,19 +234,22 @@ MonoBehaviour:
   globalAlpha: 0.5
   numFrames: -1
   startFrame: 2
-  numDepthPeelLayers: 10
+  actionOnFinish: 1
+  numDepthPeelLayers: 6
   startDepthLayer: 0
-  experiment_name: tree
+  experiment_name: fencecar
   phase_name: 
   outputDir: 
-  isTrainSet: 0
+  isTrainSet: 1
   logOutputVerbose: 0
   renderRGBUnity: 1
   renderTransparent: 1
   renderWorldPos: 1
-  deleteDirIfExists: 0
+  deleteDirIfExists: 1
+  maxActiveWriteThreads: 1
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
+  drawProxysInRgbFrame: 0
   camerIDCounter: 0
   frameIdCounter: 0
 --- !u!4 &482896724
@@ -959,7 +962,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   recordingCamera: {fileID: 1594135667}
   frameRate: 30
-  writeImages: 0
+  writeImages: 1
   recordingIndicator: {fileID: 1137435072}
   writeIndicator: {fileID: 759755986}
   frames: {fileID: 428441199}
@@ -969,6 +972,7 @@ MonoBehaviour:
   xClampMin: -80
   xClampMax: 80
   recording: 0
+  writing: 0
 --- !u!4 &1594135671 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 330699099216524513, guid: 502c4a52508eda94a9523f756bdbf9e8,
