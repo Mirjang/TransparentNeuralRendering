@@ -438,16 +438,18 @@ class Texture(nn.Module):
             for texture_id in objects_in_mask: 
 
                 if self.id_mapping: 
-                    texture_id = self.id_mapping[texture_id]
-
+                    texture_id = torch.tensor(self.id_mapping[texture_id]).to(self.device)
                 #background is 0 in mask and has no texture atm
-                if texture_id == 0: # just keep background (void) as zero
+                if texture_id < 1 : # just keep background (void) as zero
+                    if texture_id < 0:
+                        print("Invalid tex_id!")
                     continue
                 mask = mask_layer == texture_id
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                
                 if extrinsics_type: 
                     wp_sample = torch.nn.functional.grid_sample(world_positions[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
+                    
                     wp_sample = wp_sample - extrinsics
                     norm = torch.norm(wp_sample, p = 2, dim = 1).detach()
                     view_dir = wp_sample.div(norm.expand_as(wp_sample))
@@ -596,7 +598,7 @@ class NeuralRendererModel(BaseModel):
             self.visual_names += ['sampled_texture_col']
 
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        self.visual_names += ['fake' ,'target']
+        self.visual_names += ['fake', 'target']
 
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:

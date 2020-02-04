@@ -53,7 +53,7 @@ def make_dataset(dir, opt):
     return paths
 
 def loadRGBAFloatEXR(path, channel_names = ['R', 'G', 'B']): 
-    assert(OpenEXR.isOpenExrFile(path))
+    assert(OpenEXR.isOpenExrFile(path), "INVALID PATH" +str(path))
 
     exr_file = OpenEXR.InputFile(path)
     nparr = channels_to_ndarray(exr_file, channel_names)
@@ -86,6 +86,8 @@ class TransparentDataset(BaseDataset):
         print("DataLoader using: " + str(self.device))
         opt.update_world_pos = False
         self.update_world_pos = False
+        if opt.id_mapping: 
+            opt.nObjects = len(opt.id_mapping)
         self.nObjects = opt.nObjects 
         worldPositions = []
         for i in range(opt.nObjects): 
@@ -99,6 +101,9 @@ class TransparentDataset(BaseDataset):
             self.update_world_pos = True
             poses = np.loadtxt(pose_path)
             self.poses = np.reshape(poses, (-1, opt.nObjects - 1, 6))
+
+
+        
     def __getitem__(self, index):
         #print('GET ITEM: ', index)
         AB_path = self.AB_paths[index]

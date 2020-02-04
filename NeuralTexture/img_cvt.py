@@ -82,14 +82,13 @@ if __name__ == '__main__':
         torch.cuda.synchronize()
         a = time.perf_counter()
         
-        model.test()
+        # model.test()
 
 
         b = time.perf_counter()
 
         if i > warm_up:  # give torch some time to warm up
             sum_time += ((b-a) * 1000)
-
         visuals = model.get_current_visuals()
         img_path = model.get_image_paths()
         if i % 10 == 0:

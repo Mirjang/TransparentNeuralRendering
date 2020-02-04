@@ -17,7 +17,7 @@ class VideoOutput():
 
     def __init__(self, opt): 
         self.out_dir = os.path.join(opt.results_dir, opt.name, '%s_%s' % (opt.phase, opt.epoch))
-        self.out_file = os.path.join(self.out_dir, opt.name + ".avi")
+        self.out_file = os.path.join(self.out_dir, opt.name + opt.phase +  ".avi")
         self.writer = None
 
         if(os.path.exists(self.out_file)): 

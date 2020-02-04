@@ -28,11 +28,22 @@ def main():
             if(i%5==0): 
                 print("Frame: " + str(i))
             x = 0
+            gt_count = 0
             display = 0
+            pdiri = ""
             for diri in dirs: 
                 diri = diri.strip()
-
-                framediri = os.path.join(diri, str(i) + "_rgb_fake.png")
+                if diri[:3] == "GT:": 
+                    diri = diri[3:]
+                    framediri = os.path.join(diri, str(i) + "_rgb_target.png")
+                    gt_count += 1
+                else if diri == "GT": 
+                    framediri = os.path.join(pdiri, str(i) + "_rgb_target.png")
+                    gt_count += 1
+                else: 
+                    framediri = os.path.join(diri, str(i) + "_rgb_fake.png")
+                    pdiri = diri
+               # print(framediri)
                 if (not os.path.exists(framediri)):
                     print("Ended at: " + str(framediri))
                     writer.release()
@@ -47,9 +58,11 @@ def main():
                 else: 
                     display = cv2.hconcat([display, im])
                 x+=1
-            im = cv2.imread(os.path.join(diri, str(i) + "_rgb_target.png"))
-            display = cv2.hconcat([display, im])
-            layers.append(display)
+            
+            if gt_count <1 : 
+                im = cv2.imread(os.path.join(diri, str(i) + "_rgb_target.png"))
+                display = cv2.hconcat([display, im])
+                layers.append(display)
             if len(layers)>1: 
                 display = cv2.vconcat(layers)
 
