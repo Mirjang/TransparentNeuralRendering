@@ -120,6 +120,31 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &363988240 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4551225925517242968, guid: b8bd499bd9fb8af4eb4f29091e644227,
+    type: 3}
+  m_PrefabInstance: {fileID: 1095580209}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &363988242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 363988240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bee41c922e3e76a49b4d5a5b017a9f0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  objects: []
+  fixedCoord: 1
+  randomRotationX: 0
+  randomRotationY: 1
+  randomRotationZ: 0
+  poses: []
+  switchDelayFrames: 1
 --- !u!1 &482896722
 GameObject:
   m_ObjectHideFlags: 0
@@ -157,20 +182,21 @@ MonoBehaviour:
   numFrames: -1
   startFrame: 2
   actionOnFinish: 1
-  numDepthPeelLayers: 8
+  numDepthPeelLayers: 6
   startDepthLayer: 0
-  experiment_name: tree
-  phase_name: uv_train
+  experiment_name: fencecar
+  phase_name: test
   outputDir: 
   isTrainSet: 0
   logOutputVerbose: 0
-  renderRGBUnity: 0
+  renderRGBUnity: 1
   renderTransparent: 1
-  renderWorldPos: 0
+  renderWorldPos: 1
   deleteDirIfExists: 1
   maxActiveWriteThreads: 6
   framesSinceStart: 0
   default_t: {fileID: 2100000, guid: 469880c85e015004ca517a90122621b5, type: 2}
+  drawProxysInRgbFrame: 0
   camerIDCounter: 0
   frameIdCounter: 0
 --- !u!4 &482896724
@@ -199,7 +225,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ce30f37123e99f4685fede3db442ebe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  file: {fileID: 4900000, guid: 197cd86311d89474488717be96240322, type: 3}
+  file: {fileID: 4900000, guid: 865414f810994b245bcc73580560fc8b, type: 3}
   camPrefab: {fileID: 330699099216524511, guid: 502c4a52508eda94a9523f756bdbf9e8,
     type: 3}
   poses: []
@@ -392,6 +418,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Scenes
       objectReference: {fileID: 0}
+    - target: {fileID: 4551225925517242968, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 790927124451803016, guid: b8bd499bd9fb8af4eb4f29091e644227,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -447,8 +478,53 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8773654328854980966, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7922336754232339991, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3148873249242462916, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3549167095233015842, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8bd499bd9fb8af4eb4f29091e644227, type: 3}
+--- !u!1 &1293507163 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8773654328854980966, guid: b8bd499bd9fb8af4eb4f29091e644227,
+    type: 3}
+  m_PrefabInstance: {fileID: 1095580209}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1293507165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1293507163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bee41c922e3e76a49b4d5a5b017a9f0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  objects: []
+  fixedCoord: 1
+  randomRotationX: 0
+  randomRotationY: 1
+  randomRotationZ: 0
+  poses: []
+  switchDelayFrames: 1
 --- !u!1 &1306708518
 GameObject:
   m_ObjectHideFlags: 0

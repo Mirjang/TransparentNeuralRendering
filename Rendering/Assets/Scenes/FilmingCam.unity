@@ -238,9 +238,9 @@ MonoBehaviour:
   numDepthPeelLayers: 6
   startDepthLayer: 0
   experiment_name: fencecar
-  phase_name: 
+  phase_name: debug
   outputDir: 
-  isTrainSet: 1
+  isTrainSet: 0
   logOutputVerbose: 0
   renderRGBUnity: 1
   renderTransparent: 1
@@ -1111,6 +1111,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1543313770205262571, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3148873249242462916, guid: b8bd499bd9fb8af4eb4f29091e644227,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b8bd499bd9fb8af4eb4f29091e644227, type: 3}
