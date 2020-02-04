@@ -89,9 +89,18 @@ class TransparentDataset(BaseDataset):
         if opt.id_mapping: 
             opt.nObjects = len(opt.id_mapping)
         self.nObjects = opt.nObjects 
-        worldPositions = []
+        worldPositions = [0] * opt.nObjects
+        dims = None
         for i in range(opt.nObjects): 
-            worldPositions += [transforms.ToTensor()(loadRGBAFloatEXR(os.path.join(self.dir_AB, "positions_"+str(i)+".exr"), channel_names=['R', 'G', 'B']))]
+            if opt.id_mapping: 
+                if opt.id_mapping[i] >= 0:
+                    worldPositions[opt.id_mapping[i]] = transforms.ToTensor()(loadRGBAFloatEXR(os.path.join(self.dir_AB, "positions_"+str(i)+".exr"), channel_names=['R', 'G', 'B']))
+            else: 
+                worldPositions[i] = transforms.ToTensor()(loadRGBAFloatEXR(os.path.join(self.dir_AB, "positions_"+str(i)+".exr"), channel_names=['R', 'G', 'B']))
+        for i in range(opt.nObjects): 
+            print(torch.is_tensor(worldPositions[i]))
+            if not torch.is_tensor(worldPositions[i]):
+                worldPositions[i] = torch.zeros_like(worldPositions[0])
         self.worldPositions = (torch.stack(worldPositions,0) -0.5) * 100 #undo normalisation? 
 
         pose_path = os.path.join(self.dir_AB, "object_pose.txt")
