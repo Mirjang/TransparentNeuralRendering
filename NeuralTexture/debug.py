@@ -5,40 +5,45 @@ from models import create_model
 from util.visualizer import Visualizer
 from util.util import imshow
 import numpy as np
-
+import torch
 import os
 import glob
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
+    if opt.id_mapping: 
+        id_mapping = list(opt.id_mapping.split(","))
+        opt.id_mapping = list(map(int, id_mapping)) 
+        print("using mapping: " + str(opt.id_mapping))
 
+    # hard-code some parameters for test
+    opt.num_threads = 1   # test code only supports num_threads = 1
+    opt.batch_size = 1    # test code only supports batch_size = 1
+    opt.serial_batches = True  # no shuffle
+    opt.no_augmentation = True    # no flip
+    opt.display_id = -1   # no visdom display
+    opt.num_threads = 0
+    data_loader = CreateDataLoader(opt)
+    dataset = data_loader.load_data()
+    dataset_size = len(data_loader)
+    print('#test images = %d' % dataset_size)
+    print('#test objects = %d' % opt.nObjects)
 
     # opt.model = "debug"
     # opt.name = "debug"
 
-    opt.verbose = True
-
-
-    data_loader = CreateDataLoader(opt)
-    dataset = data_loader.load_data()
-    dataset_size = len(data_loader)
-
-
-
-    print('#training images = %d' % dataset_size)
-    print('#training objects = %d' % opt.nObjects)
     # for i, data in enumerate(dataset):
     #     print(data["extrinsics"])
 
 
-    # for i, data in enumerate(dataset):
-    #     if(i==0):
-    #         #print(data["paths"])
-    #         print(data["TARGET"].shape)
-    #         print(data["UV"].shape)
-    #         print(data["MASK"].shape)
-
+    for i, data in enumerate(dataset):
+        if(i % 5 == 0):
+            #print(data["paths"])
+            print(data["TARGET"].shape)
+            print(data["UV"].shape)
+            print(data["MASK"].shape)
+            print(torch.unique(data["MASK"]))
     #         print(data["paths"])
     #         # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
 
@@ -58,7 +63,7 @@ if __name__ == '__main__':
     #         plt.show()
     #         print("-------------------------")
 
-
+    exit()
 
     model = create_model(opt)
     model.setup(opt)
