@@ -275,6 +275,8 @@ class PerPixel2Renderer(nn.Module):
 class RnnPerPixelRenderer(nn.Module): 
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d):
         super(RnnPerPixelRenderer, self).__init__()
+        self.n_layers_per_iter = opt.extrinsics_skip #number of texture layers to be input at once into the RNN
+        assert(opt.num_depth_layers%self.n_layers_per_iter == 0, "Expecting even nr of depth layers and scene to consist of proper 3d objects (no planes)")
         self.n_layers = opt.num_depth_layers
         self.n_extrinsics = 1 if opt.use_spherical_harmonics else 3 if opt.use_extrinsics else 0
         self.tex_channels = opt.tex_features
@@ -312,22 +314,22 @@ class RnnPerPixelRenderer(nn.Module):
 
     def forward(self, x):
   
-        if(self.n_extrinsics>0): 
+        if self.n_extrinsics>0: 
             extrinsics = x[:, :self.n_extrinsics,...]
         x.device
         h = torch.zeros(self.hidden_dims).to(x.device)
-        if(self.isLstm):
+        if self.isLstm:
             c = torch.zeros(self.hidden_dims).to(x.device)
 
         for i in reversed(range(self.n_layers)): 
             l = self.n_extrinsics + i * self.tex_channels
             u = l + self.tex_channels
             x_i = x[:,l:u,...]
-            if(self.n_extrinsics>0): 
+            if self.n_extrinsics>0: 
                 x_i = torch.cat([extrinsics, x_i], 1)
 
             x_i = self.encoder(x_i)
-            if(self.isLstm):
+            if self.isLstm:
                 h, c = self.recurrent_cell(x_i, (h,c))
             else: 
                 h = self.recurrent_cell(x_i,h)
@@ -420,7 +422,7 @@ class Texture(nn.Module):
         self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.5))
         self.id_mapping = id_mapping
 
-    def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics, extrinsics_type=None):
+    def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics, extrinsics_type=None, extrinsics_skip = 1):
         layers = []
         N, n_layers, H, W =mask_inputs.shape
         _, F, *_ = self.data.shape
@@ -436,6 +438,7 @@ class Texture(nn.Module):
             objects_in_mask = torch.unique(mask_layer).detach()
             #for texture_id in range(self.n_textures): 
             for texture_id in objects_in_mask: 
+                mask = mask_layer == texture_id
 
                 if self.id_mapping: 
                     texture_id = torch.tensor(self.id_mapping[texture_id]).to(self.device)
@@ -444,10 +447,9 @@ class Texture(nn.Module):
                     if texture_id < 0:
                         print("Invalid tex_id!")
                     continue
-                mask = mask_layer == texture_id
                 sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                
-                if extrinsics_type: 
+                if extrinsics_type and layer%extrinsics_skip==0: 
                     wp_sample = torch.nn.functional.grid_sample(world_positions[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
                     
                     wp_sample = wp_sample - extrinsics
@@ -455,7 +457,7 @@ class Texture(nn.Module):
                     view_dir = wp_sample.div(norm.expand_as(wp_sample))
                     sample = torch.cat([sample,view_dir], 1)
                 layer_tex = layer_tex + sample * mask.float()
-            if extrinsics_type == "SH": 
+            if extrinsics_type == "SH" and layer%extrinsics_skip==0: 
                 assert(F>11) # we need 8 channels for SH + 3 extrinsics channels + at least 1 texture channel 
                 layer_sh = layer_tex[:, :8,...]
                 layer_extrinsics = layer_tex[:, 8:11, ...]

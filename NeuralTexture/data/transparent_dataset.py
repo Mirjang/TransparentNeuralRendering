@@ -98,7 +98,7 @@ class TransparentDataset(BaseDataset):
             else: 
                 worldPositions[i] = transforms.ToTensor()(loadRGBAFloatEXR(os.path.join(self.dir_AB, "positions_"+str(i)+".exr"), channel_names=['R', 'G', 'B']))
         for i in range(opt.nObjects): 
-            print(torch.is_tensor(worldPositions[i]))
+            #print(torch.is_tensor(worldPositions[i]))
             if not torch.is_tensor(worldPositions[i]):
                 worldPositions[i] = torch.zeros_like(worldPositions[0])
         self.worldPositions = (torch.stack(worldPositions,0) -0.5) * 100 #undo normalisation? 

@@ -1,4 +1,5 @@
 import time
+import os
 from options.train_options import TrainOptions
 from data import CreateDataLoader
 from models import create_model
@@ -9,6 +10,13 @@ from PIL import Image
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
+
+    abort_file = "/mnt/raid/patrickradner/kill" + str(opt.gpu_ids[0])
+
+    if os.path.exists(abort_file): 
+        os.remove(abort_file)
+        exit("Abort using file: " + abort_file)
+
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)
@@ -42,6 +50,10 @@ if __name__ == '__main__':
         epoch_iter = 0
         losses={}
         for i, data in enumerate(dataset):
+            if os.path.exists(abort_file): 
+                exit("Abort using file: " + abort_file)
+
+
             iter_start_time = time.time()
             if total_steps % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
