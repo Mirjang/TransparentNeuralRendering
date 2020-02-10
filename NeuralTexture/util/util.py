@@ -78,7 +78,7 @@ def imshow(img, axarr = plt, imgtype="tensor"):
         npimg = np.concatenate((npimg, np.zeros((h,w,1))), axis=2)
 
     axarr.imshow(npimg)
-    plt.show()
+    #plt.show()
 
 
 # Calculates Rotation Matrix given euler angles.

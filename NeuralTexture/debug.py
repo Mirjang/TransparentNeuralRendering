@@ -1,6 +1,8 @@
 import time
 from options.train_options import TrainOptions
-from data import CreateDataLoader
+from options.test_options import TestOptions
+
+from data import CreateDataLoader, transparent_dataset
 from models import create_model
 from util.visualizer import Visualizer
 from util.util import imshow
@@ -30,6 +32,19 @@ if __name__ == '__main__':
     print('#test images = %d' % dataset_size)
     print('#test objects = %d' % opt.nObjects)
 
+    opt = TestOptions().parse()
+    opt.phase="test"
+    opt.serial_batches = True  # no shuffle
+
+    #opt.id_mapping = "0,2,3,4,5,-1"
+    if opt.id_mapping: 
+        id_mapping = list(opt.id_mapping.split(","))
+        opt.id_mapping = list(map(int, id_mapping)) 
+        print("using mapping: " + str(opt.id_mapping))
+    tdata_loader = CreateDataLoader(opt)
+    tdataset = tdata_loader.load_data()
+    tdataset_size = len(tdata_loader)
+
     # opt.model = "debug"
     # opt.name = "debug"
 
@@ -37,31 +52,48 @@ if __name__ == '__main__':
     #     print(data["extrinsics"])
 
 
-    for i, data in enumerate(dataset):
+    for i, d in enumerate(zip(dataset, tdataset)):
+        data, tdata = d
         if(i % 5 == 0):
-            #print(data["paths"])
-            print(data["TARGET"].shape)
-            print(data["UV"].shape)
+            print(data["paths"])
+            print(tdata["paths"])
+
+            #print(data["TARGET"].shape)
+            #print(data["UV"].shape)
             print(data["MASK"].shape)
             print(torch.unique(data["MASK"]))
-    #         print(data["paths"])
-    #         # f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+            print(torch.unique(tdata["MASK"]))
 
-    #         # imshow(data["TARGET"][0], ax1)
-    #         # imshow(data["UV"][0], ax2)
+           # print(data["paths"])
+            f, ax = plt.subplots(5, 3, sharey=False)
+            #imshow(data["TARGET"][0], ax1)
+            #imshow(data["UV"][0], ax2)
+            imshow(data["TARGET"][0], ax[0][0])
+            imshow(tdata["TARGET"][0], ax[0][1])
+
+            for i in range(1,5): 
             
-    #         imshow(data["MASK"][0][0], imgtype = "mask")
-    #         #print(data["UV"][0][0:2].shape)
-    #         imshow(data["UV"][0][0:2], imgtype = "uv")
+                imshow(data["MASK"][0][i-1], ax[i][0], imgtype = "mask")
+                imshow(tdata["MASK"][0][i-1], ax[i][1], imgtype = "mask")
+                #imshow((data["MASK"][0][i-1] - tdata["MASK"][0][max(i-2,0)]), ax[i][2], imgtype = "mask")
+                mapp = torch.abs(data["MASK"][0][i-1] - tdata["MASK"][0][max(i-2,0)]) -1
+                imshow(mapp, ax[i][2], imgtype = "mask")
+
+                # for t in range(0,5): 
+
+                #     imshow(data["MASK"][0][i-1] == t, ax[i][2 + t], imgtype = "mask")
+                #     imshow(tdata["MASK"][0][i-1] == t, ax[i][2 + 5 + t], imgtype = "mask")
+            #print(data["UV"][0][0:2].shape)
+            #imshow(data["UV"][0][0:2], imgtype = "uv")
 
 
-    #         imshow(data["TARGET"][0], imgtype="tensor")
+            #imshow(data["TARGET"][0], imgtype="tensor")
 
-    #         masknp = data["MASK"][0].numpy()
-    #         print(np.unique(masknp))
+            # masknp = data["MASK"][0].numpy()
+            # print(np.unique(masknp))
 
-    #         plt.show()
-    #         print("-------------------------")
+            plt.show()
+            print("-------------------------")
 
     exit()
 
