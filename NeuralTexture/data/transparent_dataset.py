@@ -1,6 +1,7 @@
 import os.path
 import random
 import torchvision.transforms as transforms
+import torch.nn.functional as F
 import torch
 import numpy as np
 from data.base_dataset import BaseDataset
@@ -11,6 +12,7 @@ import glob
 from util.exr import channels_to_ndarray
 from util.util import eulerAnglesToRotationMatrix
 import cv2
+import random
 
 #for loading binary data
 # def make_dataset(dir):
@@ -102,7 +104,6 @@ class TransparentDataset(BaseDataset):
             if not torch.is_tensor(worldPositions[i]):
                 worldPositions[i] = torch.zeros_like(worldPositions[0])
         self.worldPositions = (torch.stack(worldPositions,0) -0.5) * 100 #undo normalisation? 
-
         pose_path = os.path.join(self.dir_AB, "object_pose.txt")
         if os.path.exists(pose_path): 
             print("Found custom pose file, assuming positions given in local coords")
@@ -110,8 +111,12 @@ class TransparentDataset(BaseDataset):
             self.update_world_pos = True
             poses = np.loadtxt(pose_path)
             self.poses = np.reshape(poses, (-1, opt.nObjects - 1, 6))
-
-
+            
+        self.is_train = hasattr(opt, "lr")
+        self.pad_front = opt.pad_front
+        self.num_depth_layers = opt.num_depth_layers
+        if self.pad_front: 
+            opt.num_depth_layers += 1
         
     def __getitem__(self, index):
         #print('GET ITEM: ', index)
@@ -119,7 +124,7 @@ class TransparentDataset(BaseDataset):
 
         _, rgb_path, uv_paths = AB_path
 
-        assert(len(uv_paths) >= self.opt.num_depth_layers), "len(uv_paths) !>= num_depth_layers"
+        assert(len(uv_paths) >= self.num_depth_layers), "len(uv_paths) !>= num_depth_layers"
         # default image dimensions
         
 
@@ -130,7 +135,7 @@ class TransparentDataset(BaseDataset):
         uv_arrays = []
         mask_arrays = [] 
 
-        for i in range(self.opt.num_depth_layers):
+        for i in range(self.num_depth_layers):
             mask_tmp = transforms.ToTensor()(loadRGBAFloatEXR(uv_paths[i] ,channel_names=['B'])).to(self.device)
             mask_tmp = mask_tmp * 255
             mask_tmp[mask_tmp == 255] = 0
@@ -140,11 +145,24 @@ class TransparentDataset(BaseDataset):
             uv[uv_mask == 0] = 0 #rendering forces background to be 1, however here 0 is preferable
             uv_arrays.append(uv)
 
+        if self.pad_front: 
+            pad_uv = torch.zeros_like(uv_arrays[0])
+            pad_mask = torch.zeros_like(mask_arrays[0])
+            if self.is_train:# randomly insert 0s
+                l = np.random.randint(0, self.num_depth_layers)
+                uv_arrays.insert(l, pad_uv)
+                mask_arrays.insert(l, pad_mask)
+            else: 
+                uv_arrays.append(pad_uv)
+                mask_arrays.append(pad_mask)
         UV = torch.cat(uv_arrays, 0)
         MASK = torch.cat(mask_arrays, 0)
 
-        TARGET = transforms.ToTensor()(rgb_array.astype(np.float32))
+            
 
+        TARGET = transforms.ToTensor()(rgb_array.astype(np.float32))
+        if not self.opt.target_downsample_factor == 1: 
+            TARGET = F.interpolate(TARGET.unsqueeze(0), scale_factor=1/self.opt.target_downsample_factor, mode="bilinear", align_corners=True).squeeze()
 
         # for i in range(self.opt.num_depth_layers):
         #     mask_tmp = loadRGBAFloatEXR(uv_paths[i],channel_names=['B'])

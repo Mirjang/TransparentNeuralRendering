@@ -69,6 +69,8 @@ class BaseOptions():
         parser.add_argument('--suspend_gan_epochs', type=int, default=0, help='only start gan loss after n epochs to stabilize training')
 
         parser.add_argument('--use_spherical_harmonics', action='store_true', help='if specified, sh layers are used')
+        parser.add_argument('--target_downsample_factor', type=int, default=1, help='super resolution')
+        parser.add_argument('--pad_front', action='store_true', default=0, help='randomly add 0 textures in front of scene as form of augmentation')
 
         self.initialized = True
         return parser

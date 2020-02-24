@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
@@ -167,7 +168,7 @@ class BlendRenderer(nn.Module):
     def forward(self, x): 
         # simple front to back blending, assumes tex_dims = 4
         
-        if(self.back2front):
+        if self.back2front:
             alpha = x[:, -1:, ...].clamp(0,1.0) #add some alpha bc. textures are initialized as 0 ->output would be 0 
             #last = (self.n_layers-1)*self.nFeatures
             output = x[:, -(self.nOUT+1):-self.nOUT,...] * alpha
@@ -190,7 +191,7 @@ class BlendRenderer(nn.Module):
             return output[:, 0:self.nOUT, ...]
 
 class ResidualBlock(nn.Module): 
-    def __init__(self, input_nc, inner_nc, output_nc, kernel_size = 1, norm_layer=nn.BatchNorm2d, is_first=False, is_last=False, dropout = 0.2):
+    def __init__(self, input_nc, inner_nc, output_nc, kernel_size = 1, norm_layer=nn.BatchNorm2d, is_first=False, is_last=False, activation = nn.ReLU(), dropout = 0.2):
         super(ResidualBlock, self).__init__()
         
         self.is_outer = is_first or is_last
@@ -199,7 +200,7 @@ class ResidualBlock(nn.Module):
         if(dropout>0): 
             model += [nn.Dropout(dropout)]
 
-        model += [nn.ReLU()]
+        model += [activation]
         model += [nn.Conv2d(inner_nc, output_nc, kernel_size=kernel_size, bias=True)]
         if(dropout>0): 
             model += [nn.Dropout(dropout)]
@@ -214,7 +215,6 @@ class ResidualBlock(nn.Module):
             return self.activation(self.model(x))
         else: 
             return self.activation(x + self.model(x))
-
 
 class PerPixelRenderer(nn.Module): 
     def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_inout_convs = True):
@@ -242,7 +242,7 @@ class PerPixelRenderer(nn.Module):
         return self.model(x)
 
 class PerPixel2Renderer(nn.Module): 
-    def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_inout_convs = True):
+    def __init__(self, renderer, input_nc, output_nc, dropout = 0., activation=nn.ReLU, ngf=64, norm_layer=nn.BatchNorm2d, use_inout_convs = True, use_in_convs = False, use_out_convs = False):
         super(PerPixel2Renderer, self).__init__()
         
         n_blocks = int(renderer.split("_")[1])
@@ -251,7 +251,7 @@ class PerPixel2Renderer(nn.Module):
 
         model = []
         #model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
-        if(use_inout_convs and input_nc != ngf): 
+        if(use_inout_convs and input_nc != ngf) or use_in_convs: 
             model += [nn.Conv2d(input_nc, ngf, kernel_size=1, stride=1 , bias=True)]
 
 
@@ -262,11 +262,44 @@ class PerPixel2Renderer(nn.Module):
             model += [nn.Conv2d(ngf, ngf_next, kernel_size=1, stride=1 , bias=True)]
             model += [nn.ReLU()]
             ngf = ngf_next
-
+            self.output_nc = ngf
+        
         #model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, is_last=True)]
-        if(use_inout_convs): 
+        if(use_inout_convs) or use_out_convs: 
             model += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
             model += [nn.Tanh()]
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x): 
+        return self.model(x)
+
+class PerPixel2bRenderer(nn.Module): 
+    def __init__(self, renderer, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_inout_convs = True, use_in_convs = False, use_out_convs = False):
+        super(PerPixel2bRenderer, self).__init__()
+        
+        n_blocks = int(renderer.split("_")[1])
+        
+        norm_layer=None
+
+        model = []
+        #model += [ResidualBlock(input_nc, ngf, ngf, kernel_size=1, norm_layer=norm_layer, is_first=True)]
+        if(use_inout_convs and input_nc != ngf) or use_in_convs: 
+            model += [nn.Conv2d(input_nc, ngf, kernel_size=1, stride=1 , bias=True)]
+
+
+        for _ in range(n_blocks): 
+            model += [ResidualBlock(ngf, ngf, ngf, activation = nn.LeakyReLU(0.2), dropout = 0, kernel_size=1, norm_layer=norm_layer)]
+            ngf_next= max(ngf//2, 16)
+
+            model += [nn.Conv2d(ngf, ngf_next, kernel_size=1, stride=1 , bias=True)]
+            model += [nn.LeakyReLU(0.2)]
+            ngf = ngf_next
+            self.output_nc = ngf
+        
+        #model += [ResidualBlock(ngf, ngf, output_nc, kernel_size=1, norm_layer=norm_layer, is_last=True)]
+        if(use_inout_convs) or use_out_convs: 
+            model += [nn.Conv2d(ngf, output_nc, kernel_size=1, stride=1, bias=True)]
+            model += [nn.ReLU()]
         self.model = nn.Sequential(*model)
 
     def forward(self, x): 
@@ -336,6 +369,54 @@ class RnnPerPixelRenderer(nn.Module):
 
         return self.decoder(h)
 
+class BlendPerPixelRenderer(nn.Module): 
+    def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d):
+        super(BlendPerPixelRenderer, self).__init__()
+        self.n_layers_per_iter = opt.extrinsics_skip #number of texture layers to be input at once into the RNN
+        assert(opt.num_depth_layers%self.n_layers_per_iter == 0, "Expecting even nr of depth layers and scene to consist of proper 3d objects (no planes)")
+        self.n_layers = opt.num_depth_layers // self.n_layers_per_iter
+        self.n_extrinsics = 1 if opt.use_spherical_harmonics else 3 if opt.use_extrinsics else 0
+        self.tex_channels = opt.tex_features * opt.extrinsics_skip + self.n_extrinsics
+        self.back2front = False
+
+        nref = opt.nref
+        nrdf = opt.nrdf
+        ed_blocks = renderer.split("_")
+        n_encoder_blocks = int(ed_blocks[1])
+        n_decoder_blocks = int(ed_blocks[2])
+
+        encoder = [PerPixel2Renderer("PerPixel2_"+str(n_encoder_blocks), self.tex_channels, -1, ngf = nref, norm_layer=norm_layer, use_inout_convs=False, use_in_convs=True)]
+        self.encoder = nn.Sequential(*encoder)
+        self.blend_dims = (opt.batch_size, encoder[0].output_nc-1, opt.fineSize,opt.fineSize)
+        self.alpha_dims = (opt.batch_size, 1, opt.fineSize,opt.fineSize)
+
+        decoder = [PerPixel2Renderer("PerPixel2_"+str(n_decoder_blocks), encoder[0].output_nc-1, output_nc, ngf = nrdf, norm_layer=norm_layer, use_inout_convs=True)]
+        self.decoder = nn.Sequential(*decoder)
+
+    def forward(self, x):
+        h = torch.zeros(self.blend_dims).to(x.device)
+        if self.back2front: 
+            alpha = torch.ones(self.alpha_dims).to(x.device)
+            for i in reversed(range(self.n_layers)): 
+                l = i * self.tex_channels
+                x_i = x[:,l:l + self.tex_channels,...]           
+                x_i = self.encoder(x_i)
+                alpha_in = torch.sigmoid(x_i[:,:1,...])
+                x_i = x_i[:,1:,...]
+                h = alpha_in * x_i + ((1-alpha_in)*alpha) * h
+                alpha = alpha_in
+        else: 
+            alpha_in = torch.zeros(self.alpha_dims).to(x.device)
+            for i in range(self.n_layers): 
+                l = i * self.tex_channels
+                x_i = x[:,l:l + self.tex_channels,...]           
+                x_i = self.encoder(x_i)
+                alpha = torch.sigmoid(x_i[:,:1,...])
+                x_i = x_i[:,1:,...]
+                d_alpha = (1-alpha_in)*alpha
+                h = alpha_in * h + d_alpha * x_i
+                alpha_in = alpha_in + d_alpha
+        return self.decoder(h)
 
 class RnnUNETRenderer(nn.Module): 
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d, use_dropout = False):
@@ -399,10 +480,14 @@ def define_Renderer(renderer, n_feature, opt, norm='batch', use_dropout=False, i
 
     if(renderer.startswith("UNET")):
         net = UnetRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif(renderer.startswith("PerPixel2b")):
+        net = PerPixel2Renderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
     elif(renderer.startswith("PerPixel2")):
         net = PerPixel2Renderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
     elif(renderer.startswith("PerPixel")):
         net = PerPixelRenderer(renderer, n_feature, N_OUT, ngf, norm_layer=norm_layer)
+    elif(renderer.startswith("BlendPerPixel")):
+        net = BlendPerPixelRenderer(renderer, N_OUT, opt)
     elif(renderer.startswith("Blend")):
         net = BlendRenderer(renderer, n_feature, N_OUT, opt.num_depth_layers)
     elif(renderer.startswith("LstmPerPixel") or renderer.startswith("GruPerPixel")):
@@ -577,14 +662,15 @@ class NeuralRendererModel(BaseModel):
         self.n_layers = opt.num_depth_layers
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         #self.loss_names = ['G_GAN', 'G_L1', 'D_real', 'D_fake']
+        self.use_gan = self.opt.lossType == 'GAN' # or self.opt.lossType == 'all'
 
         self.loss_names = []
         if opt.lossType == 'L1':
             self.loss_names += ['G_L1']
         elif opt.lossType == 'VGG':
-            self.loss_names += ['G_VGG']
+            self.loss_names += ['G_VGG']    
         elif opt.lossType == 'GAN':
-            self.loss_names += ['G_GAN', 'G_L1', 'D_real', 'D_fake']
+            self.loss_names += ['G_GAN', 'G_L1', 'G_total', 'D_real', 'D_fake']
         elif opt.lossType == 'all':     
             self.loss_names += ['G_L1','G_VGG', 'G_total']
 
@@ -605,6 +691,8 @@ class NeuralRendererModel(BaseModel):
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
         if self.isTrain:
             self.model_names = ['netG', 'texture']
+            if self.use_gan: 
+                self.model_names +=['netD']
         else:  # during test time, only load Gs
             self.model_names = ['netG', 'texture']
 
@@ -624,13 +712,14 @@ class NeuralRendererModel(BaseModel):
         if opt.use_spherical_harmonics: 
             ntf += 8
         self.texture = define_Texture(self.nObjects, ntf, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids, id_mapping = opt.id_mapping)
-        self.use_gan = self.opt.lossType == 'GAN' or self.opt.lossType == 'all'
 
         if self.isTrain:
-            use_sigmoid = opt.no_lsgan
+            use_sigmoid = True
             if self.use_gan:
                 # disc input: uv maps + masks + generator output
                 self.netD = networks.define_D(3 * opt.num_depth_layers + opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
+                #self.netD = networks.define_D(opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, opt.init_gain, self.gpu_ids)
+
                 self.fake_AB_pool = ImagePool(opt.pool_size)
 
             # define loss functions
@@ -711,23 +800,32 @@ class NeuralRendererModel(BaseModel):
         self.features = self.sampled_texture
         self.fake = self.netG(self.features)
 
+        if not self.opt.target_downsample_factor == 1: 
+            self.fake = F.interpolate(self.fake, scale_factor=1/self.opt.target_downsample_factor, mode="bilinear", align_corners=True)     
+
+
     def backward_D(self):
         # Fake
         # stop backprop to the generator by detaching fake_B
-        fake_AB = self.fake_AB_pool.query(torch.cat((self.input_d, self.fake), 1))
+        #fake_AB = self.fake_AB_pool.query(torch.cat((self.input_d, self.fake), 1))
+        #fake_AB = self.fake_AB_pool.query(self.fake)
+        #fake_AB = self.fake
+        fake_AB = torch.cat((self.input_d, self.fake), 1)
         #print(fake_AB.shape)
         pred_fake = self.netD(fake_AB.detach())
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
 
         # Real
         real_AB = torch.cat((self.input_d, self.target), 1)
+        #real_AB = self.target
         pred_real = self.netD(real_AB)
         self.loss_D_real = self.criterionGAN(pred_real, True)
 
         # Combined loss
         self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
 
-        self.loss_D.backward()
+        if self.loss_D > self.opt.tld: 
+            self.loss_D.backward()
 
     def computeEpochWeight(self, epoch):
         # adaptive weighting scheme
@@ -783,6 +881,7 @@ class NeuralRendererModel(BaseModel):
         if self.use_gan and epoch > self.opt.suspend_gan_epochs:
             #First, G(A) should fake the discriminator
             fake_AB = torch.cat((self.input_d, self.fake), 1)
+            #fake_AB = self.fake
             pred_fake = self.netD(fake_AB)
             #self.loss_G_GAN = fake_weight * self.criterionGAN(pred_fake, True) * 0.0#0.1 ##<<<<<
             self.loss_G_GAN = fake_weight * self.criterionGAN(pred_fake, True) * self.opt.lambda_GAN

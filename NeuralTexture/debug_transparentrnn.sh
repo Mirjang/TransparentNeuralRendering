@@ -41,7 +41,7 @@ EPOCH=latest
 #source "./experiment_setups/UNET_5_tree.sh"
 #source "./experiment_setups/UNET_8_tree.sh"
 #source "./experiment_setups/PerPixel_eztree.sh"
-source "./experiment_setups/GruPerPixel_lab3.sh"
+source "./experiment_setups/BlendPerPixel_lab3.sh"
 
 
 if [[ $(nvidia-smi | grep "^|    $GPU_ID    ") ]]; then

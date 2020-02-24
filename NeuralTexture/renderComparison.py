@@ -37,7 +37,7 @@ def main():
                     diri = diri[3:]
                     framediri = os.path.join(diri, str(i) + "_rgb_target.png")
                     gt_count += 1
-                else if diri == "GT": 
+                elif diri == "GT": 
                     framediri = os.path.join(pdiri, str(i) + "_rgb_target.png")
                     gt_count += 1
                 else: 
