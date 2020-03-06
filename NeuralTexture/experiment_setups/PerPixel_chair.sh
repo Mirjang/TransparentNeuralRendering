@@ -9,7 +9,7 @@ export DATASET_MODE=transparent
 # DATASET_MODE=transparentPNG
 
 # network used for rendering 
-export RENDERER_TYPE=PerPixel2b_3
+export RENDERER_TYPE=PerPixel2b_2
 
 # models -- for simple blending use debug
 export MODEL=neuralRenderer

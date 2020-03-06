@@ -81,8 +81,8 @@ class TransparentDataset(BaseDataset):
         self.AB_paths = sorted(make_dataset(self.dir_AB, opt))
         assert(opt.resize_or_crop == 'resize_and_crop')
         self.extrinsics = np.loadtxt(os.path.join(self.dir_AB, "camera_pose.txt"))
-        self.IMG_DIM_X = 512
-        self.IMG_DIM_Y = 512
+        self.IMG_DIM_X = opt.fineSize
+        self.IMG_DIM_Y = opt.fineSize
         #self.device = torch.device('cuda:{}'.format(opt.gpu_ids[0])) if opt.gpu_ids else torch.device('cpu')
         self.device = torch.device('cpu')
         print("DataLoader using: " + str(self.device))
