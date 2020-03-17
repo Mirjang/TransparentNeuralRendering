@@ -25,7 +25,7 @@ EPOCH=latest
 #source "./experiment_setups/PerPixel_lab3_vgg.sh"
 #source "./experiment_setups/PerPixel2_lab3_vgg.sh"
 
-source "./experiment_setups/PerPixel2_lab3_vgg_small.sh"
+source "./experiment_setups/PerPixel2_lab3_vgg_sh.sh"
 #source "./experiment_setups/PerPixel2_lab3_gan_small.sh"
 #source "./experiment_setups/Blend_lab3.sh"
 #source "./experiment_setups/LstmPerPixel_4_4_lab3.sh"

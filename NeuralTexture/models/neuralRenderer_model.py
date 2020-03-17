@@ -511,7 +511,7 @@ class Texture(nn.Module):
         layers = []
         N, n_layers, H, W =mask_inputs.shape
         _, F, *_ = self.data.shape
-
+        #print(extrinsics_type)
         if extrinsics_type: 
             F += 3
         
@@ -544,25 +544,34 @@ class Texture(nn.Module):
                 layer_tex = layer_tex + sample * mask.float()
             if extrinsics_type == "SH" and layer%extrinsics_skip==0: 
                 assert(F>11) # we need 8 channels for SH + 3 extrinsics channels + at least 1 texture channel 
-                layer_sh = layer_tex[:, :8,...]
-                layer_extrinsics = layer_tex[:, 8:11, ...]
-                print(layer_extrinsics.shape)
-                sh = self.sh_Layer(layer_sh, layer_extrinsics)
-                sh = torch.sum(sh, dim = 1)
-                layer_tex = torch.cat([layer_tex[:, 11:, ...], sh])
-                print(sh.shape)
-                print(layer_tex.shape)
+                layer_extrinsics = layer_tex[:, -3:, ...]
+                layer_tex = layer_tex[:, :-3,...]
+
+                layer_tex = self.sh_Layer(layer_tex, layer_extrinsics)
+
             layers.append(layer_tex)
         return torch.cat(layers, 1)
 
     def sh_Layer(self, tex, extrinsics):
-          
-        viewDir = [extrinsics[0][2], extrinsics[1][2], extrinsics[2][2]  ]
-        basis = torch.from_numpy(spherical_harmonics_basis(viewDir)).to(self.device)
+        dir = extrinsics[0]
+        dir_x = dir[0]
+        dir_y = dir[1]
+        dir_z = dir[2]
+
+        sh_band_0   = float(1.0)
+        sh_band_1_0 = dir_y
+        sh_band_1_1 = dir_z
+        sh_band_1_2 = dir_x
+        sh_band_2_0 = dir_x * dir_y
+        sh_band_2_1 = dir_y * dir_z
+        sh_band_2_2 = (3.0 * dir_z * dir_z - 1.0)
+        sh_band_2_3 = dir_x * dir_z
+        sh_band_2_4 = (dir_x * dir_x - dir_y * dir_y)
+
         return torch.cat([  tex[:,0:3,:,:],
-                            basis[0] * tex[:,3+0:3+1,:,:], 
-                            basis[1] * tex[:,3+1:3+2,:,:], basis[2] * tex[:,3+2:3+3,:,:], basis[3] * tex[:,3+3:3+4,:,:], 
-                            basis[4] * tex[:,3+4:3+5,:,:], basis[5] * tex[:,3+5:3+6,:,:], basis[6] * tex[:,3+6:3+7,:,:], basis[7] * tex[:,3+7:3+8,:,:], basis[8] * tex[:,3+8:3+9,:,:],
+                            sh_band_0 * tex[:,3+0:3+1,:,:], 
+                            sh_band_1_0 * tex[:,3+1:3+2,:,:], sh_band_1_1 * tex[:,3+2:3+3,:,:], sh_band_1_2 * tex[:,3+3:3+4,:,:], 
+                            sh_band_2_0 * tex[:,3+4:3+5,:,:], sh_band_2_1 * tex[:,3+5:3+6,:,:], sh_band_2_2 * tex[:,3+6:3+7,:,:], sh_band_2_3 * tex[:,3+7:3+8,:,:], sh_band_2_4 * tex[:,3+8:3+9,:,:],
                             tex[:,12:,:,:]
                             ], 1)
 
@@ -699,9 +708,9 @@ class NeuralRendererModel(BaseModel):
 
         # load/define networks
         self.input_channels = opt.tex_features * opt.num_depth_layers 
-        if(opt.use_spherical_harmonics): 
-            self.input_channels += 1*opt.num_depth_layers 
-        elif(opt.use_extrinsics):
+        if opt.use_spherical_harmonics: 
+            self.input_channels += 9*opt.num_depth_layers 
+        elif opt.use_extrinsics:
             self.input_channels += 3*opt.num_depth_layers
 
         self.netG = define_Renderer(opt.rendererType, self.input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
@@ -763,17 +772,6 @@ class NeuralRendererModel(BaseModel):
         if self.use_gan: 
             self.input_d = torch.cat((self.input_uv, self.input_mask.float() / self.nObjects), dim = 1)
 
-    def sh_Layer(self, tex, extrinsics):
-      
-        viewDir = [extrinsics[0][2], extrinsics[1][2], extrinsics[2][2]  ]
-        basis = torch.from_numpy(spherical_harmonics_basis(viewDir)).to(self.device)
-        return torch.cat([  tex[:,0:3,:,:],
-                            basis[0] * tex[:,3+0:3+1,:,:], 
-                            basis[1] * tex[:,3+1:3+2,:,:], basis[2] * tex[:,3+2:3+3,:,:], basis[3] * tex[:,3+3:3+4,:,:], 
-                            basis[4] * tex[:,3+4:3+5,:,:], basis[5] * tex[:,3+5:3+6,:,:], basis[6] * tex[:,3+6:3+7,:,:], basis[7] * tex[:,3+7:3+8,:,:], basis[8] * tex[:,3+8:3+9,:,:],
-                            tex[:,12:,:,:]
-                            ], 1)
-
     def forward(self):
         if self.opt.use_spherical_harmonics:
             _,_, H, W = self.input_mask.shape
@@ -827,31 +825,6 @@ class NeuralRendererModel(BaseModel):
         if self.loss_D > self.opt.tld: 
             self.loss_D.backward()
 
-    def computeEpochWeight(self, epoch):
-        # adaptive weighting scheme
-        fw = 1.0
-        tw = 10.0 # -> scales lr
-
-        minIter = 1
-        maxIter = 3
-        
-        alpha = (epoch - minIter) / (maxIter - minIter)
-        if epoch < minIter:
-            fw *= 0.0
-            tw *= 1.0
-        elif epoch < maxIter:
-            fw *= alpha
-            tw *= (1.0 - alpha)
-        else:
-            fw *= 1.0
-            tw *= 0.0
-
-        #fw += 0.35 #in total we add 0.35? 
-        #tw += 0.25 # <<<
-        #fw += 0.25 # <<<
-
-        return (fw, tw)
-
     def criterionVGG(self, fake, target):
         vgg_fake = self.vgg(fake)
         vgg_target = self.vgg(target)
@@ -873,10 +846,7 @@ class NeuralRendererModel(BaseModel):
 
 
     def backward_G(self, epoch, apply_grad=True):
-        # compute epoch weight
-        (fake_weight, texture_weight) = self.computeEpochWeight(epoch)
         fake_weight = 1
-        # texture_weight = 1
         self.loss_G_GAN = torch.zeros([1]).float().to(self.device)
         if self.use_gan and epoch > self.opt.suspend_gan_epochs:
             #First, G(A) should fake the discriminator
