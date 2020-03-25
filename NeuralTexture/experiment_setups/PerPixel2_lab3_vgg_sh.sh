@@ -28,7 +28,7 @@ export LR=0.0004
 # #experiment name
 export NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}_L1VGG_SH
 # additional options 
-export OPTIONS="--use_spherical_harmonics --ngf 256 --pad_front"
+export OPTIONS="--use_spherical_harmonics --ngf 256"
 
 # continue training an existing model
-CONTINUE="--lossType all --suspend_gan_epochs 25 --lambda_L1 100 --lambda_VGG 100 --niter_decay 2000" # --continue_train --epoch_count 216"
+export CONTINUE="--lossType all --suspend_gan_epochs 25 --lambda_L1 100 --lambda_VGG 100 --niter_decay 2000" # --continue_train --epoch_count 216"

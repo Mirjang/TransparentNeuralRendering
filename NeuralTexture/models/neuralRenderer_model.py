@@ -278,7 +278,8 @@ class PerPixel2bRenderer(nn.Module):
         super(PerPixel2bRenderer, self).__init__()
         
         n_blocks = int(renderer.split("_")[1])
-        
+        print("inc:"+str(input_nc))
+        return
         norm_layer=None
 
         model = []
@@ -705,21 +706,18 @@ class NeuralRendererModel(BaseModel):
         else:  # during test time, only load Gs
             self.model_names = ['netG', 'texture']
 
-
+        ntf = opt.tex_features
         # load/define networks
         self.input_channels = opt.tex_features * opt.num_depth_layers 
         if opt.use_spherical_harmonics: 
             self.input_channels += 9*opt.num_depth_layers 
+            ntf += 9
         elif opt.use_extrinsics:
             self.input_channels += 3*opt.num_depth_layers
 
         self.netG = define_Renderer(opt.rendererType, self.input_channels, opt, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         #self.netG = define_Renderer(opt.rendererType, opt.tex_features+2, opt.ngf, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)#<<<<<<<<<<<<<<<<
-
         # texture
-        ntf = opt.tex_features
-        if opt.use_spherical_harmonics: 
-            ntf += 8
         self.texture = define_Texture(self.nObjects, ntf, opt.tex_dim, device=self.device, gpu_ids=self.gpu_ids, id_mapping = opt.id_mapping)
 
         if self.isTrain:
@@ -773,14 +771,11 @@ class NeuralRendererModel(BaseModel):
             self.input_d = torch.cat((self.input_uv, self.input_mask.float() / self.nObjects), dim = 1)
 
     def forward(self):
+        _,_, H, W = self.input_mask.shape
         if self.opt.use_spherical_harmonics:
-            _,_, H, W = self.input_mask.shape
-
             extrinsics_layer = self.extrinsics.unsqueeze(2).unsqueeze(3).expand(-1,-1, H,W).to(self.device)
             self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions, extrinsics_layer, extrinsics_type="SH")
         elif self.opt.use_extrinsics: 
-            _,_, H, W = self.input_mask.shape
-
             extrinsics_layer = self.extrinsics.unsqueeze(2).unsqueeze(3).expand(-1,-1, H,W).to(self.device)
             self.sampled_texture = self.texture(self.input_uv, self.input_mask, self.world_positions, extrinsics_layer, extrinsics_type="DIR")
         else: 
@@ -789,12 +784,10 @@ class NeuralRendererModel(BaseModel):
         #first layer first 3 channels, rgb channels for nth layers will be [:, nFeatures*n:nFeatures*n+1, ...]
         self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]
 
-        # texture0 = background (no uv map)
+        #set textures for visualizer. texture0 = background (no uv map)
         for i in range(1,self.nObjects):
             setattr(self,str("texture"+str(i)+"_col"), self.texture.data[i:i+1, 0:3, ...] )
 
-        #TODO get extrinsics for SH layer
-        #self.features = self.sh_Layer(self.sampled_texture, self.extrinsics)
         self.features = self.sampled_texture
         self.fake = self.netG(self.features)
 

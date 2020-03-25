@@ -19,7 +19,7 @@ def main():
         out_file = str(sys.argv[1]) + ".avi"
         if(os.path.exists(out_file)): 
             os.remove(out_file)
-
+        img_shape = None
         i = 0
         writer = None
         while True: 
@@ -33,7 +33,14 @@ def main():
             pdiri = ""
             for diri in dirs: 
                 diri = diri.strip()
-                if diri[:3] == "GT:": 
+                if diri[:3] == "DV:": #deep voxels
+                    diri = diri[3:]
+                    framediri = os.path.join(diri, f"img_{i:05d}.png")
+                elif diri[:3] == "DD:": #DeeoVoxels Down sample
+                    diri = diri[3:]
+                    framediri = os.path.join(diri, str(i) + "_rgb.png")
+                    gt_count += 1
+                elif diri[:3] == "GT:": 
                     diri = diri[3:]
                     framediri = os.path.join(diri, str(i) + "_rgb_target.png")
                     gt_count += 1
@@ -49,6 +56,12 @@ def main():
                     writer.release()
                     exit()
                 im = cv2.imread(framediri)
+                if not img_shape: 
+                    img_shape = im.shape[:2]
+                    print ("Shape: " + str(img_shape))
+                elif not im.shape[:2] == img_shape:                 
+                    im = cv2.resize(im, img_shape)
+
                 if(x==0): 
                     display = im
                 elif x == nhf-1: 
