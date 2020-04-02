@@ -3,6 +3,8 @@ import os
 import numpy as np
 import math
 import cv2
+import matplotlib
+matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
 def psnr(img1, img2):
@@ -67,8 +69,8 @@ def main():
                 else: 
                     frames.append(cv2.imread(framediri))
         
-        if gt_count <1 : 
-            gt = cv2.imread(os.path.join(diri, str(i) + "_rgb_target.png"))
+
+        gt = cv2.imread(os.path.join(diri, str(i) + "_rgb_target.png"))
         if not loss_hist: # 1st iter
             loss_hist = [[] for _ in range(len(frames))]
 

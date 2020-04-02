@@ -791,7 +791,7 @@ class NeuralRendererModel(BaseModel):
         self.features = self.sampled_texture
         self.fake = self.netG(self.features)
 
-        if not self.opt.target_downsample_factor == 1: 
+        if not self.opt.target_downsample_factor == 1: # render internally at higher res
             self.fake = F.interpolate(self.fake, scale_factor=1/self.opt.target_downsample_factor, mode="bilinear", align_corners=True)     
 
 
