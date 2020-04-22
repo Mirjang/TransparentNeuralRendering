@@ -310,7 +310,7 @@ class RnnPerPixelRenderer(nn.Module):
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d):
         super(RnnPerPixelRenderer, self).__init__()
         self.n_layers_per_iter = opt.extrinsics_skip #number of texture layers to be input at once into the RNN
-        assert(opt.num_depth_layers%self.n_layers_per_iter == 0, "Expecting even nr of depth layers and scene to consist of proper 3d objects (no planes)")
+        assert opt.num_depth_layers%self.n_layers_per_iter == 0, "Expecting even nr of depth layers and scene to consist of proper 3d objects (no planes)"
         self.n_layers = opt.num_depth_layers
         self.n_extrinsics = 1 if opt.use_spherical_harmonics else 3 if opt.use_extrinsics else 0
         self.tex_channels = opt.tex_features
@@ -374,7 +374,7 @@ class BlendPerPixelRenderer(nn.Module):
     def __init__(self, renderer, output_nc, opt, norm_layer=nn.BatchNorm2d):
         super(BlendPerPixelRenderer, self).__init__()
         self.n_layers_per_iter = opt.extrinsics_skip #number of texture layers to be input at once into the RNN
-        assert(opt.num_depth_layers%self.n_layers_per_iter == 0, "Expecting even nr of depth layers and scene to consist of proper 3d objects (no planes)")
+        assert opt.num_depth_layers%self.n_layers_per_iter == 0, "Expecting even nr of depth layers and scene to consist of proper 3d objects (no planes)"
         self.n_layers = opt.num_depth_layers // self.n_layers_per_iter
         self.n_extrinsics = 1 if opt.use_spherical_harmonics else 3 if opt.use_extrinsics else 0
         self.tex_channels = opt.tex_features * opt.extrinsics_skip + self.n_extrinsics
@@ -508,24 +508,31 @@ class Texture(nn.Module):
         self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.5))
         self.id_mapping = id_mapping
 
+    def unfuck(self, world_positions):
+                        
+        for texture_id in range(9): 
+            self.data[texture_id, :3] = world_positions[texture_id]
+
     def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics, extrinsics_type=None, extrinsics_skip = 1):
+
         layers = []
         N, n_layers, H, W =mask_inputs.shape
         _, F, *_ = self.data.shape
         #print(extrinsics_type)
         if extrinsics_type: 
             F += 3
-        
+
         for layer in range(n_layers): 
             layer_idx = 2*layer
             mask_layer = mask_inputs[:,layer,:,:]
             uvs = torch.stack([uv_inputs[:,layer_idx,:,:], uv_inputs[:,layer_idx+1,:,:]], 3)
+            uvs_wp = torch.stack([1-uv_inputs[:,layer_idx,:,:], 1-uv_inputs[:,layer_idx+1,:,:]], 3)
+
             layer_tex = torch.zeros((N,F,H,W), device=self.device)
             objects_in_mask = torch.unique(mask_layer).detach()
             #for texture_id in range(self.n_textures): 
             for texture_id in objects_in_mask: 
-                mask = mask_layer == texture_id
-
+                mask = mask_layer == texture_id                    
                 if self.id_mapping: 
                     texture_id = torch.tensor(self.id_mapping[texture_id]).to(self.device)
                 #background is 0 in mask and has no texture atm
@@ -533,15 +540,15 @@ class Texture(nn.Module):
                     if texture_id < 0:
                         print("Invalid tex_id!")
                     continue
-                sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
-               
+                sample = torch.nn.functional.grid_sample(self.data[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border') #, align_corners = False)
+
                 if extrinsics_type and layer%extrinsics_skip==0: 
-                    wp_sample = torch.nn.functional.grid_sample(world_positions[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border', align_corners = False)
-                    
+                    wp_sample = torch.nn.functional.grid_sample(world_positions[texture_id:texture_id+1, :, :, :], uvs, mode='bilinear', padding_mode='border') #, align_corners = False)
                     wp_sample = wp_sample - extrinsics
                     norm = torch.norm(wp_sample, p = 2, dim = 1).detach()
                     view_dir = wp_sample.div(norm.expand_as(wp_sample))
-                    sample = torch.cat([sample,view_dir], 1)
+                    sample = torch.cat([sample, view_dir ], 1)   
+
                 layer_tex = layer_tex + sample * mask.float()
             if extrinsics_type == "SH" and layer%extrinsics_skip==0: 
                 assert(F>11) # we need 8 channels for SH + 3 extrinsics channels + at least 1 texture channel 
@@ -549,7 +556,6 @@ class Texture(nn.Module):
                 layer_tex = layer_tex[:, :-3,...]
 
                 layer_tex = self.sh_Layer(layer_tex, layer_extrinsics)
-
             layers.append(layer_tex)
         return torch.cat(layers, 1)
 
@@ -605,7 +611,6 @@ class HierarchicalTexture(nn.Module):
 
         return high_level + medium_level + low_level + lowest_level
 
-
 def define_Texture(n_textures, n_features, dimensions, device, gpu_ids=[], id_mapping = None):
     tex = Texture(n_textures, n_features, dimensions, device, id_mapping)
 
@@ -642,8 +647,6 @@ def spherical_harmonics_basis(dir):
     sh_band_2_3 = dir_x * dir_z
     sh_band_2_4 = (dir_x * dir_x - dir_y * dir_y)
     return np.array([sh_band_0,  sh_band_1_0, sh_band_1_1, sh_band_1_2,  sh_band_2_0, sh_band_2_1, sh_band_2_2, sh_band_2_3, sh_band_2_4], dtype=np.float32)
-
-
 
 class NeuralRendererModel(BaseModel):
     def name(self):
@@ -770,6 +773,7 @@ class NeuralRendererModel(BaseModel):
         if self.use_gan: 
             self.input_d = torch.cat((self.input_uv, self.input_mask.float() / self.nObjects), dim = 1)
 
+
     def forward(self):
         _,_, H, W = self.input_mask.shape
         if self.opt.use_spherical_harmonics:
@@ -782,11 +786,12 @@ class NeuralRendererModel(BaseModel):
             self.sampled_texture = self.texture(self.input_uv, self.input_mask, None, None)
 
         #first layer first 3 channels, rgb channels for nth layers will be [:, nFeatures*n:nFeatures*n+1, ...]
-        self.sampled_texture_col = self.sampled_texture[:,0:3,:,:]
+        self.sampled_texture_col = self.sampled_texture[:,:3,:,:]
 
         #set textures for visualizer. texture0 = background (no uv map)
         for i in range(1,self.nObjects):
             setattr(self,str("texture"+str(i)+"_col"), self.texture.data[i:i+1, 0:3, ...] )
+
 
         self.features = self.sampled_texture
         self.fake = self.netG(self.features)

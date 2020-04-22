@@ -18,7 +18,7 @@ export MODEL=neuralRenderer
 
 
 # texture parameters
-export TEX_DIM=512
+export TEX_DIM=256
 export TEX_FEATURES=16
 export NUM_DEPTH_LAYERS=14
 
@@ -26,9 +26,9 @@ export LR=0.001
 
 
 # #experiment name
-export NAME=${MODEL}_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}_dd
+export NAME=cex_${RENDERER_TYPE}_${DATA}_tex${TEX_DIM}x${TEX_FEATURES}_ex
 # additional options 
 export OPTIONS="--use_extrinsics --ngf 256 "
 
 # continue training an existing model
-CONTINUE="--weight_decay 1e-4 --lossType GAN --lambda_L1 100 --lambda_GAN 20 --suspend_gan_epochs 25" # --continue_train --epoch_count 216"
+CONTINUE="--weight_decay 1e-4 --lossType all --lambda_L1 100" # --continue_train --epoch_count 216"

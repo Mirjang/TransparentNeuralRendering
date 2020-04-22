@@ -28,8 +28,13 @@ def main():
         print("woot")
     print("comparing: " + str(dirs))
 
+    if(len(sys.argv) > 2): 
+        i = int(sys.argv[2])
+    else: 
+        i = 0
+
+
     loss_hist = None
-    i = 0
     done = False
     while not done: 
         if(i%50==0): 
