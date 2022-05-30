@@ -1,5 +1,6 @@
 # TransparentNeuralRendering
 
+Extention of https://github.com/JustusThies/NeuralTexGen
 
 Neural rendering combines classical rendering techniques with learnable elements. It has shown great potential in areas, where the geometry of an object cannot be obtained at a fine enough resolution for the object to be re-rendered using the classical pipeline. Neural rendering has also great success generating images from novel view points.
 
