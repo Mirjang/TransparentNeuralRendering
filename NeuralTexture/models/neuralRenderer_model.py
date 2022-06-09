@@ -508,11 +508,6 @@ class Texture(nn.Module):
         self.register_parameter('data', torch.nn.Parameter(2.0 * torch.ones(n_textures, n_features, dimensions, dimensions, device=device, requires_grad=True) -1.5))
         self.id_mapping = id_mapping
 
-    def unfuck(self, world_positions):
-                        
-        for texture_id in range(9): 
-            self.data[texture_id, :3] = world_positions[texture_id]
-
     def forward(self, uv_inputs, mask_inputs, world_positions, extrinsics, extrinsics_type=None, extrinsics_skip = 1):
 
         layers = []
